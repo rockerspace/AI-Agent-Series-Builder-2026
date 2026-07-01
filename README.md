@@ -2,7 +2,7 @@
 
 🌐 **Live Demo**: https://ai-agent-series-builder-2026-nac4-f5jmwu0b9.vercel.app
 🔗 **Backend API**: https://ai-agent-series-builder-2026-1.onrender.com
-🎬 **Video Demo**: *(add your Loom/YouTube link here)*
+🎬 **Video Demo**: https://www.loom.com/share/662d8c6e7a6d48e2b2e49974005afd10
 
 EcoPulse is an agentic Climate Intelligence and Action platform built as a submission for the **AI Agent Builder Series 2026** hosted by AI House & Google for Developers. 
 
