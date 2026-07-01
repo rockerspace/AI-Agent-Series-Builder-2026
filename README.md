@@ -24,13 +24,13 @@ graph TD
     User([User Browser]) -->|React Chat & Sliders UI| Frontend[React Vite Frontend]
     Frontend -->|SSE / REST API| FastAPI[FastAPI Backend]
     
-    subgraph Google AI Stack
+    subgraph "Google AI Stack"
         FastAPI -->|Orchestrates| ADK[Google ADK Runner]
         ADK -->|Gemini 2.5 Flash| Gemini[Google AI Studio]
         ADK -->|Discovers & Calls Tools| MCP[Model Context Protocol Server]
     end
     
-    subgraph Climate Tools (Stdio)
+    subgraph "Climate Tools (Stdio)"
         MCP -->|City Climate Metrics| get_climate_metrics[get_climate_metrics]
         MCP -->|Footprint Math| calculate_carbon_footprint[calculate_carbon_footprint]
         MCP -->|Net Zero Goals & EV Subsidies| search_climate_policies[search_climate_policies]
