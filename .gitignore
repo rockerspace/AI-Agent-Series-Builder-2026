@@ -8,6 +8,9 @@ backend/.env
 frontend/node_modules/
 frontend/dist/
 frontend/.DS_Store
+frontend/.env
+# Allow .env.production so Vercel can read the live backend URL
+!frontend/.env.production
 
 # General OS files
 .DS_Store

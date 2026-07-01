@@ -34,10 +34,11 @@ const Pulse: React.FC = () => {
     setError(null);
     try {
       // 1. Fetch climate metrics
-      const metricsRes = await fetch(`http://127.0.0.1:8000/api/metrics?location=${encodeURIComponent(search)}`);
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+      const metricsRes = await fetch(`${apiUrl}/api/metrics?location=${encodeURIComponent(search)}`);
       // 2. Fetch policies (try treating the search value as the country, fall back to United States if not specified)
-      const policyRes = await fetch(`http://127.0.0.1:8000/api/policies?country=${encodeURIComponent(search)}`);
-      
+      const policyRes = await fetch(`${apiUrl}/api/policies?country=${encodeURIComponent(search)}`);
+
       if (metricsRes.ok && policyRes.ok) {
         const metricsData = await metricsRes.json();
         const policyData = await policyRes.json();

@@ -35,8 +35,9 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     const fetchCalculation = async () => {
       try {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
         const response = await fetch(
-          `http://127.0.0.1:8000/api/calculate?transport_km=${transport}&electricity_kwh=${electricity}&meals=${meals}`
+          `${apiUrl}/api/calculate?transport_km=${transport}&electricity_kwh=${electricity}&meals=${meals}`
         );
         if (response.ok) {
           const data = await response.json();
