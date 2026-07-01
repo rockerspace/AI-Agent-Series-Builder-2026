@@ -1,5 +1,9 @@
 # EcoPulse: AI Climate Action Agent
 
+🌐 **Live Demo**: *(coming soon — deploy frontend to Vercel)*
+🔗 **Backend API**: https://ai-agent-series-builder-2026-1.onrender.com
+🎬 **Video Demo**: *(add your Loom/YouTube link here)*
+
 EcoPulse is an agentic Climate Intelligence and Action platform built as a submission for the **AI Agent Builder Series 2026** hosted by AI House & Google for Developers. 
 
 It leverages the **Google AI Stack**, featuring the **Google Agent Development Kit (ADK 2.0)** for multi-turn agent orchestration and the **Model Context Protocol (MCP)** for clean, decoupled tool integration.
