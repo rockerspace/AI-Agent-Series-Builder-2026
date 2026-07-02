@@ -190,6 +190,7 @@ const Chat: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [toolCall, setToolCall] = useState<string | null>(null);
   const [showChips, setShowChips] = useState(true);
+  const [slowResponse, setSlowResponse] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -209,7 +210,11 @@ const Chat: React.FC = () => {
     setMessages(prev => [...prev, { sender: 'user', text }]);
     setLoading(true);
     setToolCall(null);
+    setSlowResponse(false);
     setMessages(prev => [...prev, { sender: 'agent', text: '' }]);
+
+    // Show a wake-up warning after 10s (Render cold start)
+    const slowTimer = setTimeout(() => setSlowResponse(true), 10000);
 
     try {
       const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
@@ -275,6 +280,8 @@ const Chat: React.FC = () => {
     } finally {
       setLoading(false);
       setToolCall(null);
+      setSlowResponse(false);
+      clearTimeout(slowTimer);
     }
   };
 
@@ -333,6 +340,12 @@ const Chat: React.FC = () => {
           <div className="tool-chip">
             <Terminal size={14} />
             <span>{toolCall}</span>
+          </div>
+        )}
+        {slowResponse && loading && (
+          <div className="wake-up-banner">
+            ⏳ The backend is waking up from sleep (Render free tier).
+            This takes ~30 seconds on first request. Please wait...
           </div>
         )}
         <div ref={messagesEndRef} />

@@ -39,12 +39,18 @@ def read_root():
         "description": "This is the API server for the EcoPulse Climate AI Agent. Hit /api/chat or use the React frontend dashboard.",
         "endpoints": {
             "root": "/",
+            "health": "/health",
             "chat": "/api/chat",
             "metrics": "/api/metrics",
             "calculate": "/api/calculate",
             "policies": "/api/policies"
         }
     }
+
+@app.get("/health")
+def health_check():
+    """Lightweight keepalive endpoint — ping this every 5 minutes to prevent Render cold starts."""
+    return {"status": "ok"}
 
 # Initialize the ADK agent runner
 try:
