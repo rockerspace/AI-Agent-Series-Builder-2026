@@ -1,22 +1,30 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Sparkles, Terminal } from 'lucide-react';
+import { Send, Sparkles, Terminal, ThumbsUp, ThumbsDown, Copy, Check } from 'lucide-react';
 
 interface Message {
   sender: 'user' | 'agent';
   text: string;
+  feedback?: 'up' | 'down' | null;
 }
 
-// Simple regex-based markdown parser to display bullet points, bold text, lists, and tables beautifully
+const SUGGESTION_CHIPS = [
+  '🌆 Check Mumbai air quality & climate trend',
+  '🚗 Calculate my carbon footprint for 300km car, 150kWh, 10 meals',
+  '⚡ EV incentives and Net Zero targets in India',
+  '🌡️ What is the warming trend in New York?',
+  '🌳 How many trees offset 2 tonnes of CO2?',
+  '🔋 Green energy subsidies in Germany',
+];
+
+// Simple regex-based markdown parser
 const renderMarkdown = (text: string) => {
   if (!text) return null;
 
-  // Split lines
   const lines = text.split('\n');
   const renderedElements: React.ReactNode[] = [];
-  
+
   let inList = false;
   let listItems: string[] = [];
-  
   let inTable = false;
   let tableHeaders: string[] = [];
   let tableRows: string[][] = [];
@@ -69,53 +77,35 @@ const renderMarkdown = (text: string) => {
     }
   };
 
-  const parseInlineMarkdown = (str: string) => {
-    // Bold **text**
+  const parseInlineMarkdown = (str: string): React.ReactNode => {
     const boldRegex = /\*\*(.*?)\*\*/g;
-    let parts = [];
+    const parts: React.ReactNode[] = [];
     let lastIndex = 0;
     let match;
-    
     while ((match = boldRegex.exec(str)) !== null) {
-      if (match.index > lastIndex) {
-        parts.push(str.substring(lastIndex, match.index));
-      }
+      if (match.index > lastIndex) parts.push(str.substring(lastIndex, match.index));
       parts.push(<strong key={match.index} style={{ color: 'var(--primary-emerald)', fontWeight: 600 }}>{match[1]}</strong>);
       lastIndex = boldRegex.lastIndex;
     }
-    
-    if (lastIndex < str.length) {
-      parts.push(str.substring(lastIndex));
-    }
-    
-    return parts.length > 0 ? parts : str;
+    if (lastIndex < str.length) parts.push(str.substring(lastIndex));
+    return parts.length > 0 ? <>{parts}</> : str;
   };
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
 
-    // Handle Tables
     if (line.trim().startsWith('|')) {
       flushList(i);
       inTable = true;
       const cells = line.split('|').slice(1, -1);
-      
-      // Check if separator line
-      if (cells.every(c => c.trim().startsWith('-'))) {
-        continue;
-      }
-      
-      if (tableHeaders.length === 0) {
-        tableHeaders = cells;
-      } else {
-        tableRows.push(cells);
-      }
+      if (cells.every(c => c.trim().startsWith('-'))) continue;
+      if (tableHeaders.length === 0) tableHeaders = cells;
+      else tableRows.push(cells);
       continue;
     } else if (inTable) {
       flushTable(i);
     }
 
-    // Handle bullet points
     if (line.trim().startsWith('- ') || line.trim().startsWith('* ')) {
       inList = true;
       listItems.push(line.replace(/^[-*]\s+/, ''));
@@ -124,7 +114,6 @@ const renderMarkdown = (text: string) => {
       flushList(i);
     }
 
-    // Handle Headers
     if (line.startsWith('### ')) {
       renderedElements.push(<h3 key={i} style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-main)', margin: '14px 0 8px 0' }}>{parseInlineMarkdown(line.substring(4))}</h3>);
     } else if (line.startsWith('## ')) {
@@ -138,21 +127,70 @@ const renderMarkdown = (text: string) => {
     }
   }
 
-  // Flush remaining lists or tables
   flushList(lines.length);
   flushTable(lines.length);
 
   return <div className="markdown-response">{renderedElements}</div>;
 };
 
+// Animated typing indicator (3 bouncing dots)
+const TypingIndicator: React.FC = () => (
+  <div className="typing-indicator">
+    <span className="typing-dot" style={{ animationDelay: '0ms' }} />
+    <span className="typing-dot" style={{ animationDelay: '160ms' }} />
+    <span className="typing-dot" style={{ animationDelay: '320ms' }} />
+  </div>
+);
+
+// Message action bar: feedback + copy
+const MessageActions: React.FC<{
+  text: string;
+  feedback: 'up' | 'down' | null | undefined;
+  onFeedback: (val: 'up' | 'down') => void;
+}> = ({ text, feedback, onFeedback }) => {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="message-actions">
+      <button
+        className={`action-btn ${feedback === 'up' ? 'active-up' : ''}`}
+        onClick={() => onFeedback('up')}
+        title="Helpful"
+      >
+        <ThumbsUp size={13} />
+      </button>
+      <button
+        className={`action-btn ${feedback === 'down' ? 'active-down' : ''}`}
+        onClick={() => onFeedback('down')}
+        title="Not helpful"
+      >
+        <ThumbsDown size={13} />
+      </button>
+      <button className="action-btn copy-btn" onClick={handleCopy} title="Copy response">
+        {copied ? <Check size={13} style={{ color: 'var(--primary-emerald)' }} /> : <Copy size={13} />}
+      </button>
+    </div>
+  );
+};
+
 const Chat: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([
-    { sender: 'agent', text: '# Welcome to EcoPulse!\n\nI am your agentic **Climate & Ecological Assistant**, powered by Gemini and the Google AI stack. I can execute live calculations, inspect air quality metrics, and lookup carbon offset strategies using Model Context Protocol (MCP).\n\nAsk me something like:\n- *"What is the climate trend and renewable energy percentage in Bengaluru?"*\n- *"Calculate my carbon footprint for traveling 500 km by car, 200 kWh electricity, and eating 15 meat meals."*\n- *"What are the green EV incentives and Net Zero targets in the United States?"*' }
+    {
+      sender: 'agent',
+      text: '# Welcome to EcoPulse!\n\nI am your agentic **Climate & Ecological Assistant**, powered by Gemini and the Google AI stack. I can execute live calculations, inspect air quality metrics, and lookup carbon offset strategies using Model Context Protocol (MCP).\n\nTry one of the suggestions below or ask me anything about climate!',
+    }
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [toolCall, setToolCall] = useState<string | null>(null);
-  
+  const [showChips, setShowChips] = useState(true);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -163,36 +201,25 @@ const Chat: React.FC = () => {
     scrollToBottom();
   }, [messages, toolCall]);
 
-  const handleSend = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || loading) return;
+  const sendMessage = async (text: string) => {
+    if (!text.trim() || loading) return;
 
-    const userMessage = input;
+    setShowChips(false);
     setInput('');
-    setMessages(prev => [...prev, { sender: 'user', text: userMessage }]);
+    setMessages(prev => [...prev, { sender: 'user', text }]);
     setLoading(true);
     setToolCall(null);
-
-    // Placeholder agent response to build streaming text on
     setMessages(prev => [...prev, { sender: 'agent', text: '' }]);
 
     try {
       const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
       const response = await fetch(`${apiUrl}/api/chat`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: userMessage,
-          session_id: 'ecopulse_session',
-          user_id: 'default_user'
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text, session_id: 'ecopulse_session', user_id: 'default_user' }),
       });
 
-      if (!response.body) {
-        throw new Error('ReadableStream not supported.');
-      }
+      if (!response.body) throw new Error('ReadableStream not supported.');
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder('utf-8');
@@ -204,32 +231,22 @@ const Chat: React.FC = () => {
         done = readerDone;
         if (value) {
           buffer += decoder.decode(value, { stream: !done });
-          
-          // Split buffer by SSE format (data: ...)
           const lines = buffer.split('\n\n');
-          // Save the last partial block back to the buffer
           buffer = lines.pop() || '';
 
           for (const line of lines) {
             if (line.startsWith('data: ')) {
               const payloadStr = line.replace('data: ', '').trim();
-              
-              if (payloadStr === '[DONE]') {
-                done = true;
-                break;
-              }
+              if (payloadStr === '[DONE]') { done = true; break; }
 
               try {
                 const data = JSON.parse(payloadStr);
-                
                 if (data.type === 'text') {
                   setToolCall(null);
                   setMessages(prev => {
                     const next = [...prev];
                     const lastAgentIdx = next.map(m => m.sender).lastIndexOf('agent');
-                    if (lastAgentIdx !== -1) {
-                      next[lastAgentIdx].text += data.content;
-                    }
+                    if (lastAgentIdx !== -1) next[lastAgentIdx] = { ...next[lastAgentIdx], text: next[lastAgentIdx].text + data.content };
                     return next;
                   });
                 } else if (data.type === 'tool') {
@@ -238,15 +255,11 @@ const Chat: React.FC = () => {
                   setMessages(prev => {
                     const next = [...prev];
                     const lastAgentIdx = next.map(m => m.sender).lastIndexOf('agent');
-                    if (lastAgentIdx !== -1) {
-                      next[lastAgentIdx].text = `Error: ${data.content}`;
-                    }
+                    if (lastAgentIdx !== -1) next[lastAgentIdx] = { ...next[lastAgentIdx], text: `Error: ${data.content}` };
                     return next;
                   });
                 }
-              } catch (e) {
-                console.error('Error parsing SSE chunk:', e);
-              }
+              } catch (e) { console.error('Error parsing SSE chunk:', e); }
             }
           }
         }
@@ -256,9 +269,7 @@ const Chat: React.FC = () => {
       setMessages(prev => {
         const next = [...prev];
         const lastAgentIdx = next.map(m => m.sender).lastIndexOf('agent');
-        if (lastAgentIdx !== -1) {
-          next[lastAgentIdx].text = 'I encountered a communication error with the EcoPulse backend. Please verify that the FastAPI backend server is running.';
-        }
+        if (lastAgentIdx !== -1) next[lastAgentIdx] = { ...next[lastAgentIdx], text: 'I encountered a communication error with the EcoPulse backend. Please verify that the FastAPI backend server is running.' };
         return next;
       });
     } finally {
@@ -267,23 +278,57 @@ const Chat: React.FC = () => {
     }
   };
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    sendMessage(input);
+  };
+
+  const handleFeedback = (index: number, val: 'up' | 'down') => {
+    setMessages(prev => prev.map((m, i) => i === index ? { ...m, feedback: val } : m));
+  };
+
   return (
     <div className="chat-container">
       <div className="messages-list">
         {messages.map((msg, index) => (
-          <div key={index} className={`message-bubble ${msg.sender}`}>
-            {msg.sender === 'agent' ? (
-              msg.text ? renderMarkdown(msg.text) : (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Sparkles size={16} className="status-dot" />
-                  <span style={{ fontSize: '14px', color: 'var(--text-muted)' }}>EcoPulse is typing...</span>
+          <div key={index} className={`message-wrapper ${msg.sender}`}>
+            {msg.sender === 'agent' && (
+              <div className="agent-avatar">
+                <Sparkles size={14} />
+              </div>
+            )}
+            <div className={`message-bubble ${msg.sender}`}>
+              {msg.sender === 'agent' ? (
+                msg.text
+                  ? renderMarkdown(msg.text)
+                  : <TypingIndicator />
+              ) : (
+                msg.text
+              )}
+
+              {/* Suggestion chips only after first agent message */}
+              {msg.sender === 'agent' && index === 0 && showChips && (
+                <div className="suggestion-chips">
+                  {SUGGESTION_CHIPS.map((chip, i) => (
+                    <button key={i} className="chip" onClick={() => sendMessage(chip)}>
+                      {chip}
+                    </button>
+                  ))}
                 </div>
-              )
-            ) : (
-              msg.text
+              )}
+            </div>
+
+            {/* Message actions for agent messages with content */}
+            {msg.sender === 'agent' && msg.text && index !== 0 && (
+              <MessageActions
+                text={msg.text}
+                feedback={msg.feedback}
+                onFeedback={(val) => handleFeedback(index, val)}
+              />
             )}
           </div>
         ))}
+
         {toolCall && (
           <div className="tool-chip">
             <Terminal size={14} />
@@ -293,7 +338,7 @@ const Chat: React.FC = () => {
         <div ref={messagesEndRef} />
       </div>
 
-      <form onSubmit={handleSend} className="chat-input-wrapper">
+      <form onSubmit={handleSubmit} className="chat-input-wrapper">
         <input
           type="text"
           className="chat-input"
@@ -303,7 +348,7 @@ const Chat: React.FC = () => {
           disabled={loading}
         />
         <button type="submit" className="chat-send-btn" disabled={loading || !input.trim()}>
-          <Send size={18} fill={loading || !input.trim() ? "transparent" : "#070a13"} />
+          <Send size={18} fill={loading || !input.trim() ? 'transparent' : '#070a13'} />
         </button>
       </form>
     </div>
