@@ -192,7 +192,7 @@ const Voice: React.FC = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          message: text,
+          message: `${text} (Please reply to me ONLY in the native language: ${lang.name} - ${lang.script}. Keep the response extremely concise, under 3 sentences, and conversational for audio readback. Do not use any markdown formatting symbols.)`,
           session_id: "voice_session"
         })
       });
