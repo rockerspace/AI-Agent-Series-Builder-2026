@@ -1,6 +1,6 @@
 # EcoPulse: AI Climate Action Agent
 
-🌐 **Live Demo**: https://ai-agent-series-builder-2026-nac4-f5jmwu0b9.vercel.app
+🌐 **Live Demo**: https://ai-agent-series-builder-2026-nac4.vercel.app
 🔗 **Backend API**: https://ai-agent-series-builder-2026-1.onrender.com
 🎬 **Video Demo**: https://www.loom.com/share/662d8c6e7a6d48e2b2e49974005afd10
 
