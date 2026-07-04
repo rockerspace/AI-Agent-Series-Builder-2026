@@ -10,6 +10,14 @@ It leverages the **Google AI Stack**, featuring the **Google Agent Development K
 
 ---
 
+## 💡 Problem Statement
+
+Climate change is the defining challenge of our generation — yet most people have no idea what their individual impact is or what they can actually do about it. 
+
+**EcoPulse** is a complete, working AI Agent system designed for real-world climate actions. It is built using the **Google AI Stack** (Gemini, Google ADK, and Model Context Protocol) and integrates **Sarvam AI** to deliver a multilingual, voice-powered interface that translates environmental intelligence and localized policies across major regional languages natively.
+
+---
+
 ## 🚀 Key Features
 
 * **Aura AI Agent Chat (Multi-Persona)**: Converse with a Gemini 2.5 Flash agent that dynamically coordinate between three specialized personas:
@@ -137,7 +145,8 @@ AI-Agent-Series-Builder-2026/
 │   │   │   ├── Sidebar.tsx   # Glassmorphic side navigation
 │   │   │   ├── Chat.tsx      # Agentic chat panel with streaming SSE
 │   │   │   ├── Dashboard.tsx # Carbon calculator graph panel
-│   │   │   └── Pulse.tsx     # Climate profiling search
+│   │   │   ├── Pulse.tsx     # Climate profiling search
+│   │   │   └── Voice.tsx     # Multilingual voice mode component
 │   │   ├── App.tsx           # Layout coordinating tabs
 │   │   ├── index.css         # Curated HSL dark/emerald design system
 │   │   └── main.tsx          # Bootstrapper
