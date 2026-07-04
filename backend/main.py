@@ -20,8 +20,18 @@ if not os.environ.get("GEMINI_API_KEY"):
 
 from agent import get_climate_agent
 from mcp_server import get_climate_metrics, calculate_carbon_footprint, search_climate_policies
+from firebase_db import save_search_event, save_carbon_event
+from kafka_streamer import init_kafka_producer, stop_kafka_producer, send_kafka_event, event_generator
 
 app = FastAPI(title="EcoPulse Climate Intelligence Agent API")
+
+@app.on_event("startup")
+async def startup_event():
+    await init_kafka_producer()
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    await stop_kafka_producer()
 
 # Add CORS Middleware to enable communication with the React frontend
 app.add_middleware(
@@ -121,16 +131,23 @@ async def chat_endpoint(request: ChatRequest):
 
 # Direct data endpoints for dashboard widgets (bypassing conversational wrapper if needed)
 @app.get("/api/metrics")
-def metrics_endpoint(location: str = "Bengaluru"):
+async def metrics_endpoint(location: str = "Bengaluru"):
     try:
-        return get_climate_metrics(location)
+        res = get_climate_metrics(location)
+        save_search_event(location, res)
+        await send_kafka_event("search", {"location": location, "metrics": res})
+        return res
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/calculate")
-def calculate_endpoint(transport_km: float = 0, electricity_kwh: float = 0, meals: int = 0):
+async def calculate_endpoint(transport_km: float = 0, electricity_kwh: float = 0, meals: int = 0):
     try:
-        return calculate_carbon_footprint(transport_km, electricity_kwh, meals)
+        res = calculate_carbon_footprint(transport_km, electricity_kwh, meals)
+        inputs = {"transport_km": transport_km, "electricity_kwh": electricity_kwh, "meals": meals}
+        save_carbon_event(inputs, res)
+        await send_kafka_event("calculate", {"inputs": inputs, "result": res})
+        return res
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -140,6 +157,10 @@ def policies_endpoint(country: str = "India"):
         return search_climate_policies(country)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/stream/feed")
+async def stream_feed_endpoint():
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 if __name__ == "__main__":
     import uvicorn

@@ -37,6 +37,36 @@ const Dashboard: React.FC = () => {
   });
 
   const [copied, setCopied] = useState(false);
+  const [feed, setFeed] = useState<Array<{ id: number; text: string; time: string }>>([]);
+
+  // Connect to Kafka SSE Stream
+  useEffect(() => {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+    const eventSource = new EventSource(`${apiUrl}/api/stream/feed`);
+
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        let eventText = "";
+        if (data.event_type === "search") {
+          eventText = `City searched: ${data.payload.location} (AQI: ${data.payload.metrics.air_quality_index})`;
+        } else if (data.event_type === "calculate") {
+          eventText = `Footprint math: ${data.payload.result.annual_summary.total_co2_metric_tons} tons CO2`;
+        }
+        
+        if (eventText) {
+          setFeed((prev) => [
+            { id: Date.now() + Math.random(), text: eventText, time: new Date().toLocaleTimeString() },
+            ...prev.slice(0, 4)
+          ]);
+        }
+      } catch (err) {
+        console.error("SSE parse error", err);
+      }
+    };
+
+    return () => eventSource.close();
+  }, []);
   
   // Fetch calculation from backend
   useEffect(() => {
@@ -222,6 +252,28 @@ const Dashboard: React.FC = () => {
               <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '4px 0 0 0', lineHeight: 1.4 }}>
                 Plant and nurture {result.offset_requirements.trees_needed_per_year} mature trees annually to fully absorb your lifestyle emissions.
               </p>
+            </div>
+          </div>
+
+          {/* Live Global Activity Feed */}
+          <div className="glass-card" style={{ padding: '20px', borderRadius: '16px', border: '1px solid var(--border-glass)', background: 'var(--bg-glass)' }}>
+            <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary-cyan)', margin: 0 }}>
+              <span className="status-dot" style={{ width: '8px', height: '8px', background: '#10b981', boxShadow: '0 0 8px #10b981', display: 'inline-block', borderRadius: '50%' }}></span>
+              Live Climate Stream (Kafka)
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '150px', overflowY: 'auto', marginTop: '12px' }}>
+              {feed.length === 0 ? (
+                <div style={{ fontSize: '11px', color: 'var(--text-dim)', textAlign: 'center', padding: '8px' }}>
+                  Waiting for live telemetry stream...
+                </div>
+              ) : (
+                feed.map((item) => (
+                  <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', background: 'rgba(255, 255, 255, 0.02)', padding: '6px 10px', borderRadius: '8px', border: '1px solid var(--border-glass)', fontSize: '11px' }}>
+                    <span style={{ color: 'var(--text-main)' }}>{item.text}</span>
+                    <span style={{ color: 'var(--text-dim)' }}>{item.time}</span>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
