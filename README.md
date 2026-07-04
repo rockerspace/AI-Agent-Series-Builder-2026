@@ -16,6 +16,7 @@ It leverages the **Google AI Stack**, featuring the **Google Agent Development K
   1. **Carbon Auditor**: Analyzes emissions datasets and offset metrics.
   2. **Policy Advisor**: Tracks net-zero targets and national solar/EV incentives.
   3. **Urban Ecologist**: Evaluates local heat risk indices and air pollution profiles.
+* **Multilingual Eco-Voice Hub**: Speak to the Aura agent in any of the 11 major Indian languages (Hindi, Tamil, Telugu, Marathi, Kannada, etc.) using Sarvam AI's STT (`saaras:v3`) and receive vocalized responses translated via TTS (`bulbul:v3`).
 * **Live Environmental Telemetry**: Queries live APIs on-the-fly to pull real weather, climate risk anomalies, and air quality indices (US AQI, PM2.5, PM10) for any city globally via Open-Meteo geocoding.
 * **Carbon Tracker Dashboard**: Input transport, utility, and dietary metrics using interactive sliders to compute your metric tons of CO2 footprint and see tree-planting offset recommendations alongside real-world equivalents (smartphone charges, economy flights).
 * **Climate Pulse Geographical Profiler**: Look up localized environmental metrics (Decadal warming indices, Air Quality Indexes, renewable energy grid mixes) and country-specific Net-Zero policy targets.
@@ -30,13 +31,18 @@ The application utilizes a clean separation of concerns: a React/Vite client das
 
 ```mermaid
 graph TD
-    User([User Browser]) -->|React Chat & Sliders UI| Frontend[React Vite Frontend]
+    User([User Browser]) -->|React Chat, Sliders & Mic UI| Frontend[React Vite Frontend]
     Frontend -->|SSE / REST API| FastAPI[FastAPI Backend]
     
     subgraph "Google AI Stack"
         FastAPI -->|Orchestrates| ADK[Google ADK Runner]
         ADK -->|Gemini 2.5 Flash| Gemini[Google AI Studio]
         ADK -->|Discovers & Calls Tools| MCP[Model Context Protocol Server]
+    end
+    
+    subgraph "Voice Services"
+        FastAPI -->|Speech-to-Text proxy| SarvamSTT[Sarvam AI saaras:v3]
+        FastAPI -->|Text-to-Speech proxy| SarvamTTS[Sarvam AI bulbul:v3]
     end
     
     subgraph "Climate Tools (Live Stdio)"
@@ -56,6 +62,7 @@ graph TD
 
 * **Frontend**: React 18, TypeScript, Vite, Framer Motion (for premium micro-animations), Lucide Icons, and Firebase Client SDK.
 * **Backend**: FastAPI (Python), Uvicorn, Python-dotenv, Firebase Admin SDK, and `aiokafka`.
+* **Voice Engine**: Sarvam AI `saaras:v3` (STT) & `bulbul:v3` (TTS).
 * **Agentic Orchestration**: Google Agent Development Kit (ADK) 2.0 (running on the main loop via `run_async`).
 * **Tool Standards**: Model Context Protocol (MCP) implemented using `FastMCP` (communicates over stdio).
 * **LLM Foundation**: Gemini 2.5 Flash via Google AI Studio.
@@ -70,6 +77,7 @@ graph TD
 * Node.js 18+
 * Docker & Docker Compose (optional for real-time Kafka message streaming)
 * A Gemini API key from [Google AI Studio](https://aistudio.google.com/)
+* A Sarvam AI Subscription key from [Sarvam AI Dashboard](https://dashboard.sarvam.ai/)
 
 ### 1. (Optional) Run Kafka Event Broker
 Spin up the Kafka instance in KRaft mode:
@@ -91,6 +99,7 @@ Create a `.env` file in the `backend` directory and add your API key and configu
 ```env
 GEMINI_API_KEY=AIzaSy...
 KAFKA_BOOTSTRAP_SERVERS=localhost:9092
+SARVAM_API_KEY=your_sarvam_api_key_here
 
 # Optional Firebase Service account configuration
 FIREBASE_SERVICE_ACCOUNT_PATH=/path/to/your-credentials.json
