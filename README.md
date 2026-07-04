@@ -52,15 +52,14 @@ graph TD
 ```
 
 ---
-
 ## 📦 Tech Stack
 
-* **Frontend**: React 18, TypeScript, Vite, Framer Motion (for premium micro-animations), Lucide Icons, and Vanilla CSS tokens.
-* **Backend**: FastAPI (Python), Uvicorn, Python-dotenv.
+* **Frontend**: React 18, TypeScript, Vite, Framer Motion (for premium micro-animations), Lucide Icons, and Firebase Client SDK.
+* **Backend**: FastAPI (Python), Uvicorn, Python-dotenv, Firebase Admin SDK, and `aiokafka`.
 * **Agentic Orchestration**: Google Agent Development Kit (ADK) 2.0 (running on the main loop via `run_async`).
 * **Tool Standards**: Model Context Protocol (MCP) implemented using `FastMCP` (communicates over stdio).
 * **LLM Foundation**: Gemini 2.5 Flash via Google AI Studio.
-* **Telemetry Data**: Open-Meteo Weather & Air Quality API.
+* **Telemetry Data & Streams**: Open-Meteo Weather & Air Quality API, Dockerized Apache Kafka.
 
 ---
 
@@ -69,9 +68,17 @@ graph TD
 ### Prerequisites
 * Python 3.10+
 * Node.js 18+
+* Docker & Docker Compose (optional for real-time Kafka message streaming)
 * A Gemini API key from [Google AI Studio](https://aistudio.google.com/)
 
-### 1. Backend Setup
+### 1. (Optional) Run Kafka Event Broker
+Spin up the Kafka instance in KRaft mode:
+```bash
+docker compose up -d
+```
+*Note: If Docker is not available, the backend server will run in standalone mock mode.*
+
+### 2. Backend Setup
 Navigate to the backend directory and configure the environment:
 ```bash
 cd backend
@@ -80,9 +87,13 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Create a `.env` file in the `backend` directory and add your API key:
+Create a `.env` file in the `backend` directory and add your API key and configurations:
 ```env
 GEMINI_API_KEY=AIzaSy...
+KAFKA_BOOTSTRAP_SERVERS=localhost:9092
+
+# Optional Firebase Service account configuration
+FIREBASE_SERVICE_ACCOUNT_PATH=/path/to/your-credentials.json
 ```
 
 Start the FastAPI server:
@@ -91,7 +102,7 @@ python main.py
 ```
 *The API will start running at `http://127.0.0.1:8000`.*
 
-### 2. Frontend Setup
+### 3. Frontend Setup
 Open a new terminal window, navigate to the frontend directory, and run the developer server:
 ```bash
 cd frontend
