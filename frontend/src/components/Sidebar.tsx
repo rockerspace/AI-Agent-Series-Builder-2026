@@ -1,5 +1,5 @@
 import React from 'react';
-import { MessageSquare, Calculator, Globe, Shield, Sparkles, Mic } from 'lucide-react';
+import { MessageSquare, Calculator, Globe, Shield, Mic } from 'lucide-react';
 
 interface SidebarProps {
   activeTab: string;
@@ -16,11 +16,13 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
 
   return (
     <aside className="sidebar">
-      <div className="logo-container">
-        <div className="logo-icon">
-          <Sparkles size={18} fill="#070a13" />
-        </div>
-        <span className="logo-text">EcoPulse</span>
+      <div className="logo-container" style={{ display: 'flex', justifyContent: 'center', padding: '16px 12px', borderBottom: '1px solid var(--border-glass)' }}>
+        <img 
+          src="/logo.png" 
+          alt="EcoPulse Logo" 
+          className="pulse-logo"
+          style={{ width: '100%', maxWidth: '140px', height: 'auto', borderRadius: '8px' }} 
+        />
       </div>
 
       <nav className="nav-menu">

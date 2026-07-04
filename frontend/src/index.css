@@ -840,3 +840,25 @@ body {
   max-width: 420px;
   line-height: 1.5;
 }
+
+/* ── Dynamic Glowing Logo ── */
+.pulse-logo {
+  animation: logo-glow 3s ease-in-out infinite alternate;
+  transition: all 0.3s ease;
+}
+
+.pulse-logo:hover {
+  transform: scale(1.05);
+  filter: drop-shadow(0 0 25px rgba(0, 240, 255, 0.8));
+}
+
+@keyframes logo-glow {
+  0% {
+    filter: drop-shadow(0 0 5px rgba(0, 240, 255, 0.15));
+    transform: scale(0.98);
+  }
+  100% {
+    filter: drop-shadow(0 0 18px rgba(0, 240, 255, 0.5));
+    transform: scale(1.02);
+  }
+}
