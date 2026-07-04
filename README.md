@@ -172,6 +172,7 @@ AI-Agent-Series-Builder-2026/
 ├── backend/
 │   ├── .env                  # Environment keys
 │   ├── requirements.txt      # Python packages (google-adk, fastmcp)
+│   ├── Dockerfile            # Container definition for Cloud Run
 │   ├── mcp_server.py         # MCP Climate tools definition
 │   ├── agent.py              # ADK Agent and Runner configuration
 │   └── main.py               # FastAPI endpoints & async generators
