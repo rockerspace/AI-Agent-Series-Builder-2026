@@ -7,8 +7,8 @@ const LANGUAGES = [
   { code: 'te-IN', name: 'Telugu', script: 'తెలుగు' },
   { code: 'bn-IN', name: 'Bengali', script: 'বাংলা' },
   { code: 'kn-IN', name: 'Kannada', script: 'கನ್ನಡ' },
-  { code: 'ml-IN', name: 'Malayalam', script: 'മലയാളം' },
-  { code: 'mr-IN', name: 'Marathi', script: 'मराठी' },
+  { code: 'ml-IN', name: 'Malayalam', script: 'മലയാളம்' },
+  { code: 'mr-IN', name: 'Marathi', script: 'மராठी' },
   { code: 'gu-IN', name: 'Gujarati', script: 'ગુજરાતી' },
   { code: 'pa-IN', name: 'Punjabi', script: 'ਪੰਜਾਬੀ' },
   { code: 'or-IN', name: 'Odia', script: 'ଓଡ଼ିଆ' },
@@ -405,7 +405,7 @@ const Voice: React.FC = () => {
           </button>
 
           <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-main)' }}>
-            {recording ? "Recording... Click core to finish and submit" :
+            {recording ? "Recording... Click orb to finish and submit" :
              processing ? "Processing voice..." :
              speaking ? "Playing speech response..." : "Click to speak in " + lang.name}
           </div>
