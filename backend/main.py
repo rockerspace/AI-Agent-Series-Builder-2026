@@ -1,11 +1,16 @@
 import os
 import json
 import logging
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from dotenv import load_dotenv
+
+class TTSRequest(BaseModel):
+    text: str
+    language_code: str = "hi-IN"
+    model: str = "bulbul:v3"
 
 # Load env variables from .env
 load_dotenv()
@@ -161,6 +166,80 @@ def policies_endpoint(country: str = "India"):
 @app.get("/api/stream/feed")
 async def stream_feed_endpoint():
     return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+# ── Sarvam AI — Text to Speech ──
+@app.post("/api/voice/tts")
+async def text_to_speech_endpoint(request: TTSRequest):
+    sarvam_key = os.environ.get("SARVAM_API_KEY", "")
+    if not sarvam_key:
+        return {
+            "status": "demo",
+            "message": "Add SARVAM_API_KEY to .env for real audio synthesis",
+            "audio_base64": None
+        }
+
+    import httpx
+    headers = {
+        "api-subscription-key": sarvam_key,
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "inputs": [request.text],
+        "target_language_code": request.language_code,
+        "model": request.model,
+        "enable_preprocessing": True
+    }
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(
+            "https://api.sarvam.ai/text-to-speech",
+            headers=headers,
+            json=payload,
+            timeout=30
+        )
+        if resp.status_code != 200:
+            raise HTTPException(status_code=resp.status_code, detail="Sarvam AI TTS service error")
+        data = resp.json()
+        return {
+            "status": "success",
+            "audio_base64": data.get("audios", [None])[0]
+        }
+
+# ── Sarvam AI — Speech to Text ──
+@app.post("/api/voice/stt")
+async def speech_to_text_endpoint(
+    audio: UploadFile = File(...),
+    language_code: str = "hi-IN",
+    model: str = "saaras:v3"
+):
+    sarvam_key = os.environ.get("SARVAM_API_KEY", "")
+    if not sarvam_key:
+        return {
+            "status": "demo",
+            "message": "Add SARVAM_API_KEY to .env for real speech recognition",
+            "transcript": "Hello EcoPulse, how can I reduce my carbon footprint?"
+        }
+
+    import httpx
+    audio_content = await audio.read()
+    headers = {"api-subscription-key": sarvam_key}
+    files = {"file": (audio.filename or "recording.wav", audio_content, audio.content_type or "audio/wav")}
+    data = {"language_code": language_code, "model": model, "mode": "transcribe"}
+
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(
+            "https://api.sarvam.ai/speech-to-text",
+            headers=headers,
+            files=files,
+            data=data,
+            timeout=60
+        )
+        if resp.status_code != 200:
+            raise HTTPException(status_code=resp.status_code, detail="Sarvam AI STT service error")
+        data_resp = resp.json()
+        return {
+            "status": "success",
+            "transcript": data_resp.get("transcript", "")
+        }
 
 if __name__ == "__main__":
     import uvicorn

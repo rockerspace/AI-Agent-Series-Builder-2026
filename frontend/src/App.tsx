@@ -3,6 +3,7 @@ import Sidebar from './components/Sidebar.tsx';
 import Chat from './components/Chat.tsx';
 import Dashboard from './components/Dashboard.tsx';
 import Pulse from './components/Pulse.tsx';
+import Voice from './components/Voice.tsx';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('chat');
@@ -15,6 +16,8 @@ const App: React.FC = () => {
         return 'Personal Carbon Footprint Tracker';
       case 'pulse':
         return 'Global Ecological Pulse & Policies';
+      case 'voice':
+        return 'Sarvam Eco-Voice Interface';
       default:
         return 'EcoPulse';
     }
@@ -41,6 +44,7 @@ const App: React.FC = () => {
         {activeTab === 'chat' && <Chat />}
         {activeTab === 'calculator' && <Dashboard />}
         {activeTab === 'pulse' && <Pulse />}
+        {activeTab === 'voice' && <Voice />}
       </main>
     </div>
   );
