@@ -14,7 +14,9 @@ It leverages the **Google AI Stack**, featuring the **Google Agent Development K
 
 Climate change is the defining challenge of our generation — yet most people have no idea what their individual impact is or what they can actually do about it. 
 
-**EcoPulse** is a complete, working AI Agent system designed for real-world climate actions. It is built using the **Google AI Stack** (Gemini, Google ADK, and Model Context Protocol) and integrates **Sarvam AI** to deliver a multilingual, voice-powered interface that translates environmental intelligence and localized policies across major regional languages natively.
+**EcoPulse** is an advanced, enterprise-grade AI Agent system designed to democratize climate action. Powered by the **Google AI Stack** (Gemini 2.5 Flash, Google ADK, and Model Context Protocol) and integrated with **Sarvam AI**, EcoPulse translates global environmental intelligence, real-time telemetry, and localized policy frameworks into native speech across 11 major Indian languages. 
+
+By unifying multi-persona agent coordination, live environmental tools, and native voice interfaces, EcoPulse bridges the gap between complex climate data and daily personal action—bringing tailored sustainability guidance directly to regional communities.
 
 ---
 
