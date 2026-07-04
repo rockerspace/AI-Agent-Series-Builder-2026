@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Mic, MicOff, Volume2, Globe, Loader, ShieldAlert } from 'lucide-react';
+import { Mic, MicOff, Volume2, Globe, Loader, ShieldAlert, Cpu } from 'lucide-react';
 
 const LANGUAGES = [
   { code: 'hi-IN', name: 'Hindi', script: 'हिन्दी' },
@@ -7,17 +7,19 @@ const LANGUAGES = [
   { code: 'te-IN', name: 'Telugu', script: 'తెలుగు' },
   { code: 'bn-IN', name: 'Bengali', script: 'বাংলা' },
   { code: 'kn-IN', name: 'Kannada', script: 'கನ್ನಡ' },
-  { code: 'ml-IN', name: 'Malayalam', script: 'മലയാളம்' },
+  { code: 'ml-IN', name: 'Malayalam', script: 'മലയാളം' },
   { code: 'mr-IN', name: 'Marathi', script: 'मराठी' },
   { code: 'gu-IN', name: 'Gujarati', script: 'ગુજરાતી' },
   { code: 'pa-IN', name: 'Punjabi', script: 'ਪੰਜਾਬੀ' },
   { code: 'or-IN', name: 'Odia', script: 'ଓଡ଼ିଆ' },
   { code: 'ur-IN', name: 'Urdu', script: 'اردو' },
-  { code: 'en-IN', name: 'English', script: 'English' }
+  { code: 'en-US', name: 'English', script: 'English' }
 ];
 
 const Voice: React.FC = () => {
   const [lang, setLang] = useState(LANGUAGES[0]);
+  const [engine, setEngine] = useState<'sarvam' | 'browser'>('browser'); // Default to browser speech API for maximum local reliability!
+  
   const [recording, setRecording] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [speaking, setSpeaking] = useState(false);
@@ -29,17 +31,75 @@ const Voice: React.FC = () => {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const recognitionRef = useRef<any>(null);
 
-  // Clean up audio on unmount
+  // Clean up audio & speech recognition on unmount
   useEffect(() => {
     return () => {
       if (audioRef.current) {
         audioRef.current.pause();
       }
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.abort();
+        } catch (e) {}
+      }
     };
   }, []);
 
+  // Update SpeechRecognition language configuration when selected language changes
+  useEffect(() => {
+    if (recognitionRef.current) {
+      recognitionRef.current.lang = lang.code;
+    }
+  }, [lang]);
+
+  // Native Browser Web Speech Recognition
+  const startBrowserRecognition = () => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Your browser does not support the native Web Speech API. Please use Google Chrome or Safari.");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognitionRef.current = recognition;
+    recognition.lang = lang.code;
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => {
+      setRecording(true);
+      setTranscript('');
+      setAgentReply('');
+    };
+
+    recognition.onerror = (event: any) => {
+      console.error("Speech recognition error:", event.error);
+      setTranscript(`Error: Browser speech recognition failed (${event.error})`);
+      setRecording(false);
+    };
+
+    recognition.onend = () => {
+      setRecording(false);
+    };
+
+    recognition.onresult = async (event: any) => {
+      const speechToText = event.results[0][0].transcript;
+      setTranscript(speechToText);
+      setProcessing(true);
+      await getAgentResponse(speechToText);
+    };
+
+    recognition.start();
+  };
+
   const startRecording = async () => {
+    if (engine === 'browser') {
+      startBrowserRecognition();
+      return;
+    }
+
     setTranscript('');
     setAgentReply('');
     audioChunksRef.current = [];
@@ -57,8 +117,6 @@ const Voice: React.FC = () => {
       mediaRecorder.onstop = async () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
         await handleAudioUpload(audioBlob);
-        
-        // Stop all audio tracks to release microphone
         stream.getTracks().forEach(track => track.stop());
       };
 
@@ -71,6 +129,16 @@ const Voice: React.FC = () => {
   };
 
   const stopRecording = () => {
+    if (engine === 'browser') {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch (e) {}
+      }
+      setRecording(false);
+      return;
+    }
+
     if (mediaRecorderRef.current && recording) {
       mediaRecorderRef.current.stop();
       setRecording(false);
@@ -85,7 +153,6 @@ const Voice: React.FC = () => {
       const formData = new FormData();
       formData.append('audio', blob, 'recording.wav');
       
-      // Speech to Text
       const sttResponse = await fetch(`${apiUrl}/api/voice/stt?language_code=${lang.code}`, {
         method: 'POST',
         body: formData
@@ -107,12 +174,11 @@ const Voice: React.FC = () => {
 
     } catch (err: any) {
       console.error("STT processing error:", err);
-      setTranscript(`Error: Speech recognition failed (${err.message}). Verify backend connection and your SARVAM_API_KEY.`);
+      setTranscript(`Error: Speech recognition failed (${err.message}). Switch to Web Speech API or verify your SARVAM_API_KEY.`);
       setProcessing(false);
       return;
     }
 
-    // Process agent chat
     if (transcriptText) {
       await getAgentResponse(transcriptText);
     }
@@ -122,7 +188,6 @@ const Voice: React.FC = () => {
     try {
       const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
       
-      // Call ADK agent chat loop
       const response = await fetch(`${apiUrl}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -134,7 +199,6 @@ const Voice: React.FC = () => {
 
       if (!response.ok) throw new Error("Agent connection failed");
       
-      // Read text from EventStream
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
       let fullText = "";
@@ -160,7 +224,6 @@ const Voice: React.FC = () => {
         }
       }
 
-      // Strip markdown from response for cleaner Text to Speech
       const cleanReply = fullText.replace(/[\*#_`\-]/g, "").trim();
       setAgentReply(cleanReply);
       
@@ -178,10 +241,25 @@ const Voice: React.FC = () => {
   };
 
   const playSpeechResponse = async (text: string) => {
+    if (engine === 'browser') {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = lang.code;
+        utterance.onstart = () => setSpeaking(true);
+        utterance.onend = () => setSpeaking(false);
+        utterance.onerror = () => setSpeaking(false);
+        window.speechSynthesis.speak(utterance);
+      } else {
+        alert("Text-to-speech not supported in this browser.");
+      }
+      setProcessing(false);
+      return;
+    }
+
     try {
       const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
       
-      // Text to Speech
       const ttsResponse = await fetch(`${apiUrl}/api/voice/tts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -209,7 +287,7 @@ const Voice: React.FC = () => {
 
     } catch (err: any) {
       console.error("TTS playback error:", err);
-      setAgentReply(`Error: Vocal speech synthesis failed (${err.message}). Check your SARVAM_API_KEY.`);
+      setAgentReply(`Error: Vocal speech synthesis failed (${err.message}). Switch to Web Speech API or verify your SARVAM_API_KEY.`);
     } finally {
       setProcessing(false);
     }
@@ -219,6 +297,47 @@ const Voice: React.FC = () => {
     <div className="dashboard-scroll" style={{ padding: '24px', overflowY: 'auto', maxHeight: 'calc(100vh - 80px)' }}>
       <div style={{ maxWidth: '680px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
         
+        {/* Engine Switcher */}
+        <div className="glass-card" style={{ padding: '16px 20px', borderRadius: '12px', border: '1px solid var(--border-glass)', background: 'var(--bg-glass)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Cpu size={16} color="var(--primary-cyan)" /> Speech Engine Selection
+          </span>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              onClick={() => setEngine('browser')}
+              style={{
+                padding: '6px 12px',
+                borderRadius: '8px',
+                border: engine === 'browser' ? '1px solid var(--primary-cyan)' : '1px solid var(--border-glass)',
+                background: engine === 'browser' ? 'rgba(0, 240, 255, 0.08)' : 'rgba(255,255,255,0.02)',
+                color: engine === 'browser' ? 'var(--primary-cyan)' : 'var(--text-muted)',
+                cursor: 'pointer',
+                fontSize: '11px',
+                fontWeight: 600,
+                transition: 'all 0.15s'
+              }}
+            >
+              Web Speech API (Local Browser)
+            </button>
+            <button
+              onClick={() => setEngine('sarvam')}
+              style={{
+                padding: '6px 12px',
+                borderRadius: '8px',
+                border: engine === 'sarvam' ? '1px solid var(--primary-cyan)' : '1px solid var(--border-glass)',
+                background: engine === 'sarvam' ? 'rgba(0, 240, 255, 0.08)' : 'rgba(255,255,255,0.02)',
+                color: engine === 'sarvam' ? 'var(--primary-cyan)' : 'var(--text-muted)',
+                cursor: 'pointer',
+                fontSize: '11px',
+                fontWeight: 600,
+                transition: 'all 0.15s'
+              }}
+            >
+              Sarvam AI (Cloud Backend)
+            </button>
+          </div>
+        </div>
+
         {/* Language Header */}
         <div className="glass-card" style={{ padding: '24px', borderRadius: '16px', border: '1px solid var(--border-glass)', background: 'var(--bg-glass)' }}>
           <h3 style={{ fontSize: '15px', fontWeight: 600, marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -253,7 +372,7 @@ const Voice: React.FC = () => {
         </div>
 
         {/* Demo Mode Notice */}
-        {demoMode && (
+        {demoMode && engine === 'sarvam' && (
           <div className="glass-card" style={{ padding: '12px 16px', borderRadius: '12px', background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.2)', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: '#f59e0b' }}>
             <ShieldAlert size={18} />
             <span>Running in Demo Mode. Set <strong>SARVAM_API_KEY</strong> in your .env file to enable live voice translation.</span>
@@ -286,8 +405,8 @@ const Voice: React.FC = () => {
           </button>
 
           <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-main)' }}>
-            {recording ? "Recording... Click to finish and send to EcoPulse" :
-             processing ? "Processing voice with Sarvam AI..." :
+            {recording ? "Recording... Click core to finish and submit" :
+             processing ? "Processing voice..." :
              speaking ? "Playing speech response..." : "Click to speak in " + lang.name}
           </div>
         </div>
