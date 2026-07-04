@@ -79,6 +79,7 @@ const Voice: React.FC = () => {
 
   const handleAudioUpload = async (blob: Blob) => {
     setProcessing(true);
+    let transcriptText = "";
     try {
       const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
       const formData = new FormData();
@@ -90,7 +91,9 @@ const Voice: React.FC = () => {
         body: formData
       });
       
-      if (!sttResponse.ok) throw new Error("STT Translation failed");
+      if (!sttResponse.ok) {
+        throw new Error(`STT request failed with status: ${sttResponse.status}`);
+      }
       const sttData = await sttResponse.json();
       
       if (sttData.status === 'demo') {
@@ -99,13 +102,19 @@ const Voice: React.FC = () => {
         setDemoMode(false);
       }
 
-      setTranscript(sttData.transcript);
-      await getAgentResponse(sttData.transcript);
+      transcriptText = sttData.transcript;
+      setTranscript(transcriptText);
 
-    } catch (err) {
-      console.error("Voice processing error:", err);
-      setTranscript("Error: Failed to process voice input.");
+    } catch (err: any) {
+      console.error("STT processing error:", err);
+      setTranscript(`Error: Speech recognition failed (${err.message}). Verify backend connection and your SARVAM_API_KEY.`);
       setProcessing(false);
+      return;
+    }
+
+    // Process agent chat
+    if (transcriptText) {
+      await getAgentResponse(transcriptText);
     }
   };
 
@@ -161,8 +170,9 @@ const Voice: React.FC = () => {
         setProcessing(false);
       }
 
-    } catch (err) {
+    } catch (err: any) {
       console.error("Chat generation error:", err);
+      setAgentReply(`Error: Chat agent failed to respond (${err.message})`);
       setProcessing(false);
     }
   };
@@ -197,8 +207,9 @@ const Voice: React.FC = () => {
         await audio.play();
       }
 
-    } catch (err) {
+    } catch (err: any) {
       console.error("TTS playback error:", err);
+      setAgentReply(`Error: Vocal speech synthesis failed (${err.message}). Check your SARVAM_API_KEY.`);
     } finally {
       setProcessing(false);
     }
