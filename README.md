@@ -179,6 +179,8 @@ AI-Agent-Series-Builder-2026/
 │   ├── agent.py              # ADK Agent and Runner configuration
 │   └── main.py               # FastAPI endpoints & async generators
 ├── frontend/
+│   ├── public/
+│   │   └── logo.png          # Pulsating brand logo asset
 │   ├── src/
 │   │   ├── components/
 │   │   │   ├── Sidebar.tsx   # Glassmorphic side navigation
