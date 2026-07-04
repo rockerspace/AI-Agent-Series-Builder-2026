@@ -1,11 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Search, MapPin, Activity, Wind, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { Search, MapPin, Wind, AlertTriangle, ShieldCheck, Globe, Thermometer } from 'lucide-react';
 
 interface ClimateMetrics {
   location: string;
+  country: string;
+  coordinates: { lat: number; lon: number };
+  temperature: string;
   temperature_anomaly: string;
   extreme_weather_risk_index: number;
   air_quality_index: number;
+  pm2_5: number;
+  pm10: number;
   clean_energy_percentage: number;
   forest_cover_change: string;
   primary_emitters: string;
@@ -33,17 +38,20 @@ const Pulse: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      // 1. Fetch climate metrics
       const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
       const metricsRes = await fetch(`${apiUrl}/api/metrics?location=${encodeURIComponent(search)}`);
-      // 2. Fetch policies (try treating the search value as the country, fall back to United States if not specified)
-      const policyRes = await fetch(`${apiUrl}/api/policies?country=${encodeURIComponent(search)}`);
-
-      if (metricsRes.ok && policyRes.ok) {
+      
+      if (metricsRes.ok) {
         const metricsData = await metricsRes.json();
-        const policyData = await policyRes.json();
         setMetrics(metricsData);
-        setPolicy(policyData);
+        
+        // Use the resolved country from geocoding to query policies
+        const resolvedCountry = metricsData.country || search;
+        const policyRes = await fetch(`${apiUrl}/api/policies?country=${encodeURIComponent(resolvedCountry)}`);
+        if (policyRes.ok) {
+          const policyData = await policyRes.json();
+          setPolicy(policyData);
+        }
       } else {
         throw new Error("Location metrics not found.");
       }
@@ -55,7 +63,6 @@ const Pulse: React.FC = () => {
     }
   };
 
-  // Run initial search on mount
   useEffect(() => {
     handleSearch();
   }, []);
@@ -63,7 +70,7 @@ const Pulse: React.FC = () => {
   const getAqiClass = (aqi: number) => {
     if (aqi <= 50) return { label: 'Good', color: '#10b981', bg: 'rgba(16, 185, 129, 0.1)' };
     if (aqi <= 100) return { label: 'Moderate', color: '#eab308', bg: 'rgba(234, 179, 8, 0.1)' };
-    return { label: 'Poor', color: '#ef4444', bg: 'rgba(239, 68, 68, 0.1)' };
+    return { label: 'Unhealthy', color: '#ef4444', bg: 'rgba(239, 68, 68, 0.1)' };
   };
 
   const getRiskClass = (risk: number) => {
@@ -73,69 +80,84 @@ const Pulse: React.FC = () => {
   };
 
   return (
-    <div className="dashboard-scroll">
+    <div className="dashboard-scroll" style={{ padding: '24px', overflowY: 'auto', maxHeight: 'calc(100vh - 80px)' }}>
       {/* Top Search bar */}
-      <div className="search-box">
+      <div className="search-box" style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
         <input
           type="text"
           className="search-input"
+          style={{ flex: 1, padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border-glass)', background: 'var(--bg-glass)', color: 'var(--text-main)', fontSize: '14px' }}
           placeholder="Search climate metrics by city or country (e.g., London, India, Tokyo, United States)..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
         />
-        <button className="btn-search" onClick={handleSearch} disabled={loading}>
-          <Search size={18} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+        <button 
+          className="btn-search" 
+          onClick={handleSearch} 
+          disabled={loading}
+          style={{ background: 'var(--primary-cyan)', color: '#000', border: 'none', padding: '12px 24px', borderRadius: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+        >
+          <Search size={18} />
           Search
         </button>
       </div>
 
       {error && (
-        <div className="glass-card" style={{ borderLeft: '4px solid #ef4444', marginBottom: '24px', padding: '16px' }}>
-          <p style={{ color: '#ef4444', fontSize: '14px' }}>{error}</p>
+        <div className="glass-card" style={{ borderLeft: '4px solid #ef4444', marginBottom: '24px', padding: '16px', borderRadius: '12px', background: 'rgba(239, 68, 68, 0.05)' }}>
+          <p style={{ color: '#ef4444', fontSize: '14px', margin: 0 }}>{error}</p>
         </div>
       )}
 
       {loading ? (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '200px' }}>
-          <div className="status-dot" style={{ width: '16px', height: '16px', marginBottom: '16px' }} />
-          <span style={{ fontSize: '14px', color: 'var(--text-muted)' }}>Analyzing environment grids...</span>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '250px' }}>
+          <div className="status-dot" style={{ width: '16px', height: '16px', marginBottom: '16px', background: 'var(--primary-cyan)' }} />
+          <span style={{ fontSize: '14px', color: 'var(--text-muted)' }}>Querying Open-Meteo Climate Grids & Live Air Telemetry...</span>
         </div>
       ) : (
         metrics && (
-          <div className="pulse-main-view">
+          <div className="pulse-main-view" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '24px' }}>
+            
             {/* Left Column: Metrics & Indicators */}
             <div>
-              <h2 style={{ fontSize: '20px', fontWeight: 600, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <MapPin size={22} color="var(--primary-emerald)" />
-                {metrics.location} Environmental Pulse
-              </h2>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <h2 style={{ fontSize: '20px', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <MapPin size={22} color="var(--primary-cyan)" />
+                  {metrics.location}, {metrics.country}
+                </h2>
+                
+                {/* Coordinates Badge */}
+                <span style={{ fontSize: '11px', background: 'rgba(255,255,255,0.05)', padding: '4px 10px', borderRadius: '12px', border: '1px solid var(--border-glass)', display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--text-dim)' }}>
+                  <Globe size={12} /> Lat: {metrics.coordinates.lat.toFixed(2)} | Lon: {metrics.coordinates.lon.toFixed(2)}
+                </span>
+              </div>
 
-              <div className="metrics-grid">
-                {/* Metric Card: Temp Anomaly */}
-                <div className="glass-card metric-card">
-                  <div className="metric-header">
-                    <span>Decadal Warming</span>
-                    <Activity size={16} color="var(--primary-emerald)" />
+              <div className="metrics-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+                
+                {/* Temperature */}
+                <div className="glass-card metric-card" style={{ padding: '16px', borderRadius: '12px', border: '1px solid var(--border-glass)', background: 'var(--bg-glass)' }}>
+                  <div className="metric-header" style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)', fontSize: '12px', marginBottom: '8px' }}>
+                    <span>Live Temp</span>
+                    <Thermometer size={16} color="var(--primary-cyan)" />
                   </div>
-                  <div className="metric-value" style={{ color: 'var(--primary-emerald)' }}>
-                    {metrics.temperature_anomaly.split(' ')[0]}
+                  <div className="metric-value" style={{ fontSize: '28px', fontWeight: 700, color: 'var(--text-main)' }}>
+                    {metrics.temperature}
                   </div>
-                  <div className="metric-footer">
-                    <span>Temp deviation versus historical baselines.</span>
+                  <div className="metric-footer" style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '6px' }}>
+                    Real-time weather station.
                   </div>
                 </div>
 
-                {/* Metric Card: AQI */}
-                <div className="glass-card metric-card">
-                  <div className="metric-header">
-                    <span>Air Quality (AQI)</span>
+                {/* AQI */}
+                <div className="glass-card metric-card" style={{ padding: '16px', borderRadius: '12px', border: '1px solid var(--border-glass)', background: 'var(--bg-glass)' }}>
+                  <div className="metric-header" style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)', fontSize: '12px', marginBottom: '8px' }}>
+                    <span>Air Quality Index</span>
                     <Wind size={16} color={getAqiClass(metrics.air_quality_index).color} />
                   </div>
-                  <div className="metric-value" style={{ color: getAqiClass(metrics.air_quality_index).color }}>
+                  <div className="metric-value" style={{ fontSize: '28px', fontWeight: 700, color: getAqiClass(metrics.air_quality_index).color }}>
                     {metrics.air_quality_index}
                   </div>
-                  <div className="metric-footer" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <div className="metric-footer" style={{ marginTop: '6px' }}>
                     <span style={{ 
                       padding: '2px 8px', 
                       borderRadius: '10px', 
@@ -149,37 +171,52 @@ const Pulse: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Metric Card: Weather Risk */}
-                <div className="glass-card metric-card">
-                  <div className="metric-header">
+                {/* Weather Risk */}
+                <div className="glass-card metric-card" style={{ padding: '16px', borderRadius: '12px', border: '1px solid var(--border-glass)', background: 'var(--bg-glass)' }}>
+                  <div className="metric-header" style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)', fontSize: '12px', marginBottom: '8px' }}>
                     <span>Weather Risk Index</span>
                     <AlertTriangle size={16} color={getRiskClass(metrics.extreme_weather_risk_index).color} />
                   </div>
-                  <div className="metric-value" style={{ color: getRiskClass(metrics.extreme_weather_risk_index).color }}>
+                  <div className="metric-value" style={{ fontSize: '28px', fontWeight: 700, color: getRiskClass(metrics.extreme_weather_risk_index).color }}>
                     {metrics.extreme_weather_risk_index}/10
                   </div>
-                  <div className="metric-footer">
-                    <span>{getRiskClass(metrics.extreme_weather_risk_index).label} for flood/heat events.</span>
+                  <div className="metric-footer" style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '6px' }}>
+                    {getRiskClass(metrics.extreme_weather_risk_index).label} for extreme events.
                   </div>
                 </div>
 
-                {/* Metric Card: Clean Energy */}
-                <div className="glass-card metric-card">
-                  <div className="metric-header">
+                {/* Clean Energy */}
+                <div className="glass-card metric-card" style={{ padding: '16px', borderRadius: '12px', border: '1px solid var(--border-glass)', background: 'var(--bg-glass)' }}>
+                  <div className="metric-header" style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)', fontSize: '12px', marginBottom: '8px' }}>
                     <span>Clean Grid Mix</span>
                     <ShieldCheck size={16} color="var(--primary-cyan)" />
                   </div>
-                  <div className="metric-value" style={{ color: 'var(--primary-cyan)' }}>
+                  <div className="metric-value" style={{ fontSize: '28px', fontWeight: 700, color: 'var(--primary-cyan)' }}>
                     {metrics.clean_energy_percentage}%
                   </div>
-                  <div className="metric-footer">
-                    <span>Renewable capacity feeding active power grid.</span>
+                  <div className="metric-footer" style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '6px' }}>
+                    Renewable capacity share.
+                  </div>
+                </div>
+              </div>
+
+              {/* AQI Particle Speeds */}
+              <div className="glass-card" style={{ marginBottom: '24px', padding: '20px', borderRadius: '16px', border: '1px solid var(--border-glass)', background: 'var(--bg-glass)' }}>
+                <h3 style={{ fontSize: '15px', fontWeight: 600, marginBottom: '14px' }}>Particulate Telemetry Breakdown</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                  <div style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '12px', borderRadius: '12px', border: '1px solid var(--border-glass)' }}>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Fine Particulate (PM2.5)</div>
+                    <div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-main)' }}>{metrics.pm2_5} µg/m³</div>
+                  </div>
+                  <div style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '12px', borderRadius: '12px', border: '1px solid var(--border-glass)' }}>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Coarse Particulate (PM10)</div>
+                    <div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-main)' }}>{metrics.pm10} µg/m³</div>
                   </div>
                 </div>
               </div>
 
               {/* Extra Details */}
-              <div className="glass-card" style={{ marginBottom: '32px' }}>
+              <div className="glass-card" style={{ padding: '20px', borderRadius: '16px', border: '1px solid var(--border-glass)', background: 'var(--bg-glass)' }}>
                 <h3 style={{ fontSize: '15px', fontWeight: 600, marginBottom: '12px' }}>Ecological Profile Details</h3>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', fontSize: '14px' }}>
                   <div>
@@ -198,7 +235,7 @@ const Pulse: React.FC = () => {
 
             {/* Right Column: Policies & Net-Zero Target */}
             {policy && (
-              <div className="glass-card" style={{ height: 'fit-content' }}>
+              <div className="glass-card" style={{ height: 'fit-content', padding: '24px', borderRadius: '16px', border: '1px solid var(--border-glass)', background: 'var(--bg-glass)' }}>
                 <h3 style={{ fontSize: '18px', fontWeight: 600, borderBottom: '1px solid var(--border-glass)', paddingBottom: '12px', marginBottom: '16px' }}>
                   Country Climate Targets
                 </h3>
@@ -219,7 +256,7 @@ const Pulse: React.FC = () => {
 
                 <div style={{ marginBottom: '20px' }}>
                   <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '8px' }}>Active Regulatory Policies</div>
-                  <ul style={{ marginLeft: '16px', fontSize: '13.5px', color: 'var(--text-main)' }}>
+                  <ul style={{ marginLeft: '16px', fontSize: '13px', color: 'var(--text-main)', paddingLeft: '8px' }}>
                     {policy.core_policies.map((p, idx) => (
                       <li key={idx} style={{ marginBottom: '6px' }}>{p}</li>
                     ))}
@@ -228,7 +265,7 @@ const Pulse: React.FC = () => {
 
                 <div style={{ borderTop: '1px solid var(--border-glass)', paddingTop: '16px' }}>
                   <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '6px' }}>Available Consumer Subsidies</div>
-                  <p style={{ fontSize: '13.5px', color: 'var(--primary-emerald)', fontWeight: 500 }}>
+                  <p style={{ fontSize: '13px', color: 'var(--primary-cyan)', fontWeight: 500, margin: 0 }}>
                     {policy.active_incentives}
                   </p>
                 </div>

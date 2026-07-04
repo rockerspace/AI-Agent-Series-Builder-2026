@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Leaf, Info } from 'lucide-react';
+import { Leaf, Info, Share2, Award, Zap, Plane, Smartphone } from 'lucide-react';
 
 interface CalculationResult {
   monthly_summary: {
@@ -16,6 +16,10 @@ interface CalculationResult {
     trees_needed_per_year: number;
     description: string;
   };
+  analogies?: {
+    smartphone_charges: number;
+    flight_km_equivalent: number;
+  };
 }
 
 const Dashboard: React.FC = () => {
@@ -28,8 +32,11 @@ const Dashboard: React.FC = () => {
   const [result, setResult] = useState<CalculationResult>({
     monthly_summary: { transport_co2_kg: 108, electricity_co2_kg: 100, diet_co2_kg: 25.2, total_co2_kg: 233.2 },
     annual_summary: { total_co2_metric_tons: 2.8, carbon_tier: "Moderate" },
-    offset_requirements: { trees_needed_per_year: 127, description: "" }
+    offset_requirements: { trees_needed_per_year: 127, description: "" },
+    analogies: { smartphone_charges: 28217, flight_km_equivalent: 2027 }
   });
+
+  const [copied, setCopied] = useState(false);
   
   // Fetch calculation from backend
   useEffect(() => {
@@ -48,7 +55,6 @@ const Dashboard: React.FC = () => {
       }
     };
 
-    // Simple debounce to prevent flooding the server on slider movements
     const delayDebounce = setTimeout(() => {
       fetchCalculation();
     }, 150);
@@ -56,33 +62,43 @@ const Dashboard: React.FC = () => {
     return () => clearTimeout(delayDebounce);
   }, [transport, electricity, meals]);
 
-  // Calculate percentage helper for charts
-  const maxCO2 = Math.max(
-    result.monthly_summary.transport_co2_kg,
-    result.monthly_summary.electricity_co2_kg,
-    result.monthly_summary.diet_co2_kg,
-    1 // prevent zero division
-  );
+  // Determine Eco-Score Letter Grade based on annual CO2 metric tons
+  const getEcoScoreGrade = (tons: number) => {
+    if (tons <= 1.5) return { grade: "A+", label: "Excellent", color: "#10b981", bg: "rgba(16, 185, 129, 0.1)" };
+    if (tons <= 3.0) return { grade: "A", label: "Very Good", color: "#10b981", bg: "rgba(16, 185, 129, 0.1)" };
+    if (tons <= 5.0) return { grade: "B", label: "Good/Average", color: "#3b82f6", bg: "rgba(59, 130, 246, 0.1)" };
+    if (tons <= 8.5) return { grade: "C", label: "Needs Work", color: "#f59e0b", bg: "rgba(245, 158, 11, 0.1)" };
+    if (tons <= 12.0) return { grade: "D", label: "High Impact", color: "#ef4444", bg: "rgba(239, 68, 68, 0.1)" };
+    return { grade: "F", label: "Excessive Impact", color: "#ef4444", bg: "rgba(239, 68, 68, 0.1)" };
+  };
 
-  const getPercent = (value: number) => {
-    return `${(value / maxCO2) * 100}%`;
+  const score = getEcoScoreGrade(result.annual_summary.total_co2_metric_tons);
+
+
+
+  const copyShareText = () => {
+    const text = `🌱 I just calculated my carbon footprint on EcoPulse! My Eco-Score is "${score.grade}" (${score.label}) with ${result.annual_summary.total_co2_metric_tons} metric tons of CO2 annually. To offset this, I'll need to plant ${result.offset_requirements.trees_needed_per_year} trees. Check yours: https://ai-agent-series-builder-2026-nac4-f5jmwu0b9.vercel.app #EcoPulse #ClimateAction #Sustainability`;
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
-    <div className="dashboard-scroll">
-      <div className="dashboard-grid">
+    <div className="dashboard-scroll" style={{ padding: '24px', overflowY: 'auto', maxHeight: 'calc(100vh - 80px)' }}>
+      <div className="dashboard-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
+        
         {/* Sliders Input Panel */}
-        <div className="calculator-section">
-          <div className="glass-card calculator-card">
-            <h2 style={{ fontSize: '18px', fontWeight: 600, borderBottom: '1px solid var(--border-glass)', paddingBottom: '12px' }}>
-              Carbon Calculator Input
+        <div className="calculator-section" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div className="glass-card calculator-card" style={{ padding: '24px', borderRadius: '16px', border: '1px solid var(--border-glass)', background: 'var(--bg-glass)' }}>
+            <h2 style={{ fontSize: '18px', fontWeight: 600, borderBottom: '1px solid var(--border-glass)', paddingBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Zap size={18} color="var(--primary-cyan)" /> Carbon Calculator Inputs
             </h2>
             
             {/* Transport Slider */}
-            <div className="form-group">
-              <div className="slider-val">
+            <div className="form-group" style={{ marginTop: '20px' }}>
+              <div className="slider-val" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>
                 <label>Transport Distance (Vehicle)</label>
-                <span>{transport} km/mo</span>
+                <span style={{ color: 'var(--primary-cyan)' }}>{transport} km/mo</span>
               </div>
               <input 
                 type="range" 
@@ -91,15 +107,16 @@ const Dashboard: React.FC = () => {
                 step="50" 
                 value={transport} 
                 onChange={(e) => setTransport(Number(e.target.value))} 
+                style={{ width: '100%', accentColor: 'var(--primary-cyan)' }}
               />
-              <span style={{ fontSize: '11px', color: 'var(--text-dim)' }}>Estimate includes average petrol/diesel combustion footprint.</span>
+              <span style={{ fontSize: '11px', color: 'var(--text-dim)', display: 'block', marginTop: '4px' }}>Estimate includes average petrol/diesel combustion footprint.</span>
             </div>
 
             {/* Utility Slider */}
-            <div className="form-group">
-              <div className="slider-val">
+            <div className="form-group" style={{ marginTop: '20px' }}>
+              <div className="slider-val" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>
                 <label>Grid Electricity</label>
-                <span>{electricity} kWh/mo</span>
+                <span style={{ color: 'var(--primary-cyan)' }}>{electricity} kWh/mo</span>
               </div>
               <input 
                 type="range" 
@@ -108,15 +125,16 @@ const Dashboard: React.FC = () => {
                 step="10" 
                 value={electricity} 
                 onChange={(e) => setElectricity(Number(e.target.value))} 
+                style={{ width: '100%', accentColor: 'var(--primary-cyan)' }}
               />
-              <span style={{ fontSize: '11px', color: 'var(--text-dim)' }}>Based on household electricity usage and average grid carbon index.</span>
+              <span style={{ fontSize: '11px', color: 'var(--text-dim)', display: 'block', marginTop: '4px' }}>Based on household electricity usage and average grid carbon index.</span>
             </div>
 
             {/* Diet Slider */}
-            <div className="form-group">
-              <div className="slider-val">
+            <div className="form-group" style={{ marginTop: '20px' }}>
+              <div className="slider-val" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>
                 <label>Diet (Meat meals)</label>
-                <span>{meals} meals/mo</span>
+                <span style={{ color: 'var(--primary-cyan)' }}>{meals} meals/mo</span>
               </div>
               <input 
                 type="range" 
@@ -125,13 +143,14 @@ const Dashboard: React.FC = () => {
                 step="1" 
                 value={meals} 
                 onChange={(e) => setMeals(Number(e.target.value))} 
+                style={{ width: '100%', accentColor: 'var(--primary-cyan)' }}
               />
-              <span style={{ fontSize: '11px', color: 'var(--text-dim)' }}>Meat products (especially beef) carry heavy livestock emission factors.</span>
+              <span style={{ fontSize: '11px', color: 'var(--text-dim)', display: 'block', marginTop: '4px' }}>Meat products (especially beef) carry heavy livestock emission factors.</span>
             </div>
           </div>
 
           {/* Quick Info Box */}
-          <div className="glass-card" style={{ display: 'flex', gap: '12px', padding: '16px' }}>
+          <div className="glass-card" style={{ display: 'flex', gap: '12px', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-glass)', background: 'var(--bg-glass)' }}>
             <Info size={20} color="var(--primary-cyan)" style={{ flexShrink: 0 }} />
             <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
               <strong>Calculation Method:</strong> The engine uses global Greenhouse Gas Protocol emissions variables (Car: 0.18kg/km, Electricity: 0.40kg/kWh, Diet: 2.1kg/meal) to compute accurate offset metrics.
@@ -140,14 +159,21 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Results Panel */}
-        <div className="results-section">
-          {/* Main ton display card */}
-          <div className="glass-card co2-main-display">
+        <div className="results-section" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          
+          {/* Main ton display card with Eco-Score Badge */}
+          <div className="glass-card co2-main-display" style={{ padding: '24px', borderRadius: '16px', border: '1px solid var(--border-glass)', background: 'var(--bg-glass)', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
+            
+            {/* Eco-Score Badge */}
+            <div style={{ position: 'absolute', top: '16px', right: '16px', display: 'flex', alignItems: 'center', gap: '6px', background: score.bg, border: `1px solid ${score.color}`, color: score.color, padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 600 }}>
+              <Award size={14} /> Eco-Score: {score.grade}
+            </div>
+
             <span style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '8px' }}>Annual Footprint</span>
-            <div className="co2-num">
+            <div className="co2-num" style={{ fontSize: '64px', fontWeight: 800, color: 'var(--primary-cyan)', textShadow: '0 0 20px rgba(0, 240, 255, 0.2)' }}>
               {result.annual_summary.total_co2_metric_tons}
             </div>
-            <span className="co2-unit">Metric Tons CO2</span>
+            <span className="co2-unit" style={{ fontSize: '14px', color: 'var(--text-muted)', fontWeight: 500 }}>Metric Tons CO2 / Year</span>
             
             <div style={{ 
               marginTop: '16px', 
@@ -159,65 +185,68 @@ const Dashboard: React.FC = () => {
               border: result.annual_summary.carbon_tier === 'High' ? '1px solid rgba(239, 68, 68, 0.2)' : '1px solid rgba(16, 185, 129, 0.2)',
               color: result.annual_summary.carbon_tier === 'High' ? '#ef4444' : '#10b981'
             }}>
-              {result.annual_summary.carbon_tier} Carbon Footprint Tier
+              {result.annual_summary.carbon_tier} Carbon Footprint Tier ({score.label})
             </div>
           </div>
 
-          {/* Emission breakdown bar chart */}
-          <div className="glass-card">
-            <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '16px' }}>Monthly Breakdown (kg CO2)</h3>
-            
-            <div className="bar-chart-container">
-              {/* Transport Bar */}
-              <div className="bar-row">
-                <div className="bar-label">
-                  <span>Transport Emissions</span>
-                  <span>{result.monthly_summary.transport_co2_kg} kg</span>
-                </div>
-                <div className="bar-track">
-                  <div className="bar-fill transport" style={{ width: getPercent(result.monthly_summary.transport_co2_kg) }} />
+          {/* Real-world Impact Analogies */}
+          <div className="glass-card" style={{ padding: '20px', borderRadius: '16px', border: '1px solid var(--border-glass)', background: 'var(--bg-glass)' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              Real-World Impact Equivalents
+            </h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '12px', borderRadius: '12px', border: '1px solid var(--border-glass)', display: 'flex', gap: '10px', alignItems: 'center' }}>
+                <Smartphone size={24} color="var(--primary-cyan)" />
+                <div>
+                  <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-main)' }}>{result.analogies?.smartphone_charges.toLocaleString()}</div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-dim)' }}>Smartphone Charges</div>
                 </div>
               </div>
-
-              {/* Utility Bar */}
-              <div className="bar-row">
-                <div className="bar-label">
-                  <span>Electricity Emissions</span>
-                  <span>{result.monthly_summary.electricity_co2_kg} kg</span>
-                </div>
-                <div className="bar-track">
-                  <div className="bar-fill utility" style={{ width: getPercent(result.monthly_summary.electricity_co2_kg) }} />
+              <div style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '12px', borderRadius: '12px', border: '1px solid var(--border-glass)', display: 'flex', gap: '10px', alignItems: 'center' }}>
+                <Plane size={24} color="#a855f7" />
+                <div>
+                  <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-main)' }}>{result.analogies?.flight_km_equivalent.toLocaleString()} km</div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-dim)' }}>Economy Flight Equiv.</div>
                 </div>
               </div>
-
-              {/* Diet Bar */}
-              <div className="bar-row">
-                <div className="bar-label">
-                  <span>Dietary Emissions</span>
-                  <span>{result.monthly_summary.diet_co2_kg} kg</span>
-                </div>
-                <div className="bar-track">
-                  <div className="bar-fill diet" style={{ width: getPercent(result.monthly_summary.diet_co2_kg) }} />
-                </div>
-              </div>
-            </div>
-
-            <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: 'var(--text-dim)' }}>
-              <span>Total Monthly:</span>
-              <strong style={{ color: 'var(--text-main)' }}>{result.monthly_summary.total_co2_kg} kg</strong>
             </div>
           </div>
 
-          {/* Offsetting Recommendations */}
-          <div className="offset-box">
-            <div className="offset-icon">
-              <Leaf size={28} color="#10b981" />
+          {/* Offsetting Target */}
+          <div className="offset-box" style={{ background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%)', border: '1px solid rgba(16, 185, 129, 0.2)', padding: '20px', borderRadius: '16px', display: 'flex', gap: '16px', alignItems: 'center' }}>
+            <div className="offset-icon" style={{ background: 'rgba(16, 185, 129, 0.15)', padding: '12px', borderRadius: '50%', color: '#10b981' }}>
+              <Leaf size={28} />
             </div>
             <div className="offset-text">
-              <h3>Target Plantings: {result.offset_requirements.trees_needed_per_year} Trees</h3>
-              <p>You need to plant and nourish {result.offset_requirements.trees_needed_per_year} mature trees annually to fully offset your household and travel activities.</p>
+              <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#10b981', margin: 0 }}>Target Offset: {result.offset_requirements.trees_needed_per_year} Trees</h3>
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '4px 0 0 0', lineHeight: 1.4 }}>
+                Plant and nurture {result.offset_requirements.trees_needed_per_year} mature trees annually to fully absorb your lifestyle emissions.
+              </p>
             </div>
           </div>
+
+          {/* Share Option */}
+          <button 
+            onClick={copyShareText}
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              gap: '8px', 
+              background: copied ? '#10b981' : 'var(--primary-cyan)', 
+              color: '#000', 
+              border: 'none', 
+              padding: '12px', 
+              borderRadius: '12px', 
+              cursor: 'pointer', 
+              fontSize: '14px', 
+              fontWeight: 700, 
+              transition: 'all 0.2s ease-in-out' 
+            }}
+          >
+            <Share2 size={16} />
+            {copied ? "Copied Share Badge!" : "Share Results to LinkedIn"}
+          </button>
         </div>
       </div>
     </div>

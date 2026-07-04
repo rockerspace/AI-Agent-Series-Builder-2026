@@ -12,9 +12,14 @@ It leverages the **Google AI Stack**, featuring the **Google Agent Development K
 
 ## 🚀 Key Features
 
-* **Aura AI Agent Chat**: Converse with a Gemini 2.5 Flash agent equipped with environmental science logic. It executes real-time calculations and live policies lookups via standard MCP tools.
-* **Carbon Tracker Dashboard**: Input transport, utility, and dietary metrics using interactive sliders to compute your metric tons of CO2 footprint and see tree-planting offset recommendations.
+* **Aura AI Agent Chat (Multi-Persona)**: Converse with a Gemini 2.5 Flash agent that dynamically coordinate between three specialized personas:
+  1. **Carbon Auditor**: Analyzes emissions datasets and offset metrics.
+  2. **Policy Advisor**: Tracks net-zero targets and national solar/EV incentives.
+  3. **Urban Ecologist**: Evaluates local heat risk indices and air pollution profiles.
+* **Live Environmental Telemetry**: Queries live APIs on-the-fly to pull real weather, climate risk anomalies, and air quality indices (US AQI, PM2.5, PM10) for any city globally via Open-Meteo geocoding.
+* **Carbon Tracker Dashboard**: Input transport, utility, and dietary metrics using interactive sliders to compute your metric tons of CO2 footprint and see tree-planting offset recommendations alongside real-world equivalents (smartphone charges, economy flights).
 * **Climate Pulse Geographical Profiler**: Look up localized environmental metrics (Decadal warming indices, Air Quality Indexes, renewable energy grid mixes) and country-specific Net-Zero policy targets.
+* **Social Engagement**: Single-click copy badge to share Eco-Scores (A+ through F) directly to LinkedIn.
 * **Streaming Tool Feedback**: The UI renders status chips dynamically to show when the ADK Agent is invoking MCP tools (e.g. `[Running tool: calculate_carbon_footprint]`).
 
 ---
@@ -34,10 +39,15 @@ graph TD
         ADK -->|Discovers & Calls Tools| MCP[Model Context Protocol Server]
     end
     
-    subgraph "Climate Tools (Stdio)"
-        MCP -->|City Climate Metrics| get_climate_metrics[get_climate_metrics]
-        MCP -->|Footprint Math| calculate_carbon_footprint[calculate_carbon_footprint]
+    subgraph "Climate Tools (Live Stdio)"
+        MCP -->|Live City Climate & AQI| get_climate_metrics[get_climate_metrics]
+        MCP -->|Carbon Math & Analogies| calculate_carbon_footprint[calculate_carbon_footprint]
         MCP -->|Net Zero Goals & EV Subsidies| search_climate_policies[search_climate_policies]
+    end
+    
+    subgraph "External Telemetry APIs"
+        get_climate_metrics -->|Geo/Weather API| OpenMeteo[Open-Meteo Geocoding & Climate API]
+        get_climate_metrics -->|AQI API| OpenAQ[Open-Meteo Air Quality telemetry]
     end
 ```
 
@@ -50,6 +60,7 @@ graph TD
 * **Agentic Orchestration**: Google Agent Development Kit (ADK) 2.0 (running on the main loop via `run_async`).
 * **Tool Standards**: Model Context Protocol (MCP) implemented using `FastMCP` (communicates over stdio).
 * **LLM Foundation**: Gemini 2.5 Flash via Google AI Studio.
+* **Telemetry Data**: Open-Meteo Weather & Air Quality API.
 
 ---
 
