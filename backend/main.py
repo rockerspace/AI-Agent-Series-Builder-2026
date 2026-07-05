@@ -134,6 +134,64 @@ async def chat_endpoint(request: ChatRequest):
 
     return StreamingResponse(event_stream_generator(), media_type="text/event-stream")
 
+@app.post("/api/upload-bill")
+async def upload_bill_endpoint(
+    file: UploadFile = File(...),
+    session_id: str = "default_session",
+    user_id: str = "default_user"
+):
+    if not agent_runner:
+        raise HTTPException(status_code=500, detail="Agent is not initialized. Check server logs.")
+    
+    try:
+        content = await file.read()
+        bill_text = content.decode("utf-8", errors="ignore")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to read file: {str(e)}")
+
+    prompt_message = f"Please analyze this utility bill document text, extract the electricity/gas usage, and autonomously calculate the carbon footprint using your tool. Here is the parsed bill text:\n\n{bill_text}"
+
+    # Verify API key
+    if not os.environ.get("GEMINI_API_KEY"):
+         def mock_generator():
+              err_msg = "### Environment Setup Needed\n\nPlease add your **GEMINI_API_KEY** in `backend/.env` file."
+              yield f"data: {json.dumps({'type': 'text', 'content': err_msg})}\n\n"
+              yield "data: [DONE]\n\n"
+         return StreamingResponse(mock_generator(), media_type="text/event-stream")
+
+    async def event_stream_generator():
+        try:
+            from google.genai import types
+            
+            structured_message = types.Content(
+                role="user",
+                parts=[types.Part.from_text(text=prompt_message)]
+            )
+            
+            events = agent_runner.run_async(
+                user_id=user_id,
+                session_id=session_id,
+                new_message=structured_message
+            )
+            
+            async for event in events:
+                if event.content and event.content.parts:
+                    for part in event.content.parts:
+                        if hasattr(part, 'text') and part.text:
+                            yield f"data: {json.dumps({'type': 'text', 'content': part.text})}\n\n"
+                        elif hasattr(part, 'function_call') and part.function_call:
+                            tool_name = part.function_call.name
+                            yield f"data: {json.dumps({'type': 'tool', 'content': f'Running tool: {tool_name}'})}\n\n"
+            
+            yield "data: [DONE]\n\n"
+            
+        except Exception as e:
+            logger.error(f"Exception during agent run: {e}")
+            yield f"data: {json.dumps({'type': 'error', 'content': str(e)})}\n\n"
+            yield "data: [DONE]\n\n"
+
+    return StreamingResponse(event_stream_generator(), media_type="text/event-stream")
+
 # Direct data endpoints for dashboard widgets (bypassing conversational wrapper if needed)
 @app.get("/api/metrics")
 async def metrics_endpoint(location: str = "Bengaluru"):

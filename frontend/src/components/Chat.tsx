@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Sparkles, Terminal, ThumbsUp, ThumbsDown, Copy, Check } from 'lucide-react';
+import { Send, Sparkles, Terminal, ThumbsUp, ThumbsDown, Copy, Check, Paperclip } from 'lucide-react';
 
 interface Message {
   sender: 'user' | 'agent';
@@ -193,6 +193,7 @@ const Chat: React.FC = () => {
   const [slowResponse, setSlowResponse] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -201,6 +202,92 @@ const Chat: React.FC = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages, toolCall]);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || loading) return;
+
+    if (fileInputRef.current) fileInputRef.current.value = '';
+
+    setShowChips(false);
+    setMessages(prev => [...prev, { sender: 'user', text: `📁 Uploaded Utility Bill: **${file.name}**` }]);
+    setLoading(true);
+    setToolCall(null);
+    setSlowResponse(false);
+    setMessages(prev => [...prev, { sender: 'agent', text: '' }]);
+
+    const slowTimer = setTimeout(() => setSlowResponse(true), 10000);
+
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch(`${apiUrl}/api/upload-bill?session_id=ecopulse_session`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.body) throw new Error('ReadableStream not supported.');
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let done = false;
+      let buffer = '';
+
+      while (!done) {
+        const { value, done: readerDone } = await reader.read();
+        done = readerDone;
+        if (value) {
+          buffer += decoder.decode(value, { stream: !done });
+          const lines = buffer.split('\n\n');
+          buffer = lines.pop() || '';
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const payloadStr = line.replace('data: ', '').trim();
+              if (payloadStr === '[DONE]') { done = true; break; }
+
+              try {
+                const data = JSON.parse(payloadStr);
+                if (data.type === 'text') {
+                  setToolCall(null);
+                  setMessages(prev => {
+                    const next = [...prev];
+                    const lastAgentIdx = next.map(m => m.sender).lastIndexOf('agent');
+                    if (lastAgentIdx !== -1) next[lastAgentIdx] = { ...next[lastAgentIdx], text: next[lastAgentIdx].text + data.content };
+                    return next;
+                  });
+                } else if (data.type === 'tool') {
+                  setToolCall(data.content);
+                } else if (data.type === 'error') {
+                  setMessages(prev => {
+                    const next = [...prev];
+                    const lastAgentIdx = next.map(m => m.sender).lastIndexOf('agent');
+                    if (lastAgentIdx !== -1) next[lastAgentIdx] = { ...next[lastAgentIdx], text: `Error: ${data.content}` };
+                    return next;
+                  });
+                }
+              } catch (e) { console.error('Error parsing SSE chunk:', e); }
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error during bill upload:', error);
+      setMessages(prev => {
+        const next = [...prev];
+        const lastAgentIdx = next.map(m => m.sender).lastIndexOf('agent');
+        if (lastAgentIdx !== -1) next[lastAgentIdx] = { ...next[lastAgentIdx], text: 'I encountered a communication error with the EcoPulse backend. Please verify that the FastAPI backend server is running.' };
+        return next;
+      });
+    } finally {
+      setLoading(false);
+      setToolCall(null);
+      setSlowResponse(false);
+      clearTimeout(slowTimer);
+    }
+  };
 
   const sendMessage = async (text: string) => {
     if (!text.trim() || loading) return;
@@ -351,11 +438,38 @@ const Chat: React.FC = () => {
         <div ref={messagesEndRef} />
       </div>
 
-      <form onSubmit={handleSubmit} className="chat-input-wrapper">
+      <form onSubmit={handleSubmit} className="chat-input-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <input 
+          type="file" 
+          ref={fileInputRef} 
+          onChange={handleFileUpload} 
+          accept=".txt,.json,.csv,.pdf" 
+          style={{ display: 'none' }} 
+        />
+        <button 
+          type="button" 
+          className="chat-upload-btn" 
+          onClick={() => fileInputRef.current?.click()} 
+          disabled={loading}
+          title="Upload Utility Bill"
+          style={{
+            background: 'none',
+            border: 'none',
+            color: 'var(--text-muted)',
+            cursor: 'pointer',
+            padding: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'color 0.15s'
+          }}
+        >
+          <Paperclip size={18} />
+        </button>
         <input
           type="text"
           className="chat-input"
-          placeholder="Ask EcoPulse about climate trends, footprints, or incentives..."
+          placeholder="Ask EcoPulse, or upload a utility bill file to parse footprint..."
           value={input}
           onChange={(e) => setInput(e.target.value)}
           disabled={loading}
