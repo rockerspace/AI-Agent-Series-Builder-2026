@@ -862,3 +862,14 @@ body {
     transform: scale(1.02);
   }
 }
+
+@keyframes pulse-border {
+  0% {
+    border-color: rgba(239, 68, 68, 0.4);
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.1);
+  }
+  100% {
+    border-color: rgba(239, 68, 68, 0.8);
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.35);
+  }
+}

@@ -221,6 +221,51 @@ def policies_endpoint(country: str = "India"):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+class TriggerWarningRequest(BaseModel):
+    location: str = "Mumbai"
+    language_code: str = "hi-IN"
+    mock_aqi: int = 165
+
+@app.post("/api/warnings/trigger")
+async def trigger_warning_endpoint(request: TriggerWarningRequest):
+    try:
+        metrics = get_climate_metrics(request.location)
+    except Exception:
+        metrics = {"temperature": "N/A", "air_quality_index": request.mock_aqi, "weather_summary": "High Pollution"}
+        
+    metrics['air_quality_index'] = request.mock_aqi
+    
+    prompt = (
+        f"You are the Urban Ecologist. Draft a critical climate warning alert message in the language code '{request.language_code}' "
+        f"for the city of {request.location} because the Air Quality Index (AQI) has reached {request.mock_aqi}. "
+        f"Keep the message under 2 sentences, urgent, and direct. Do not use any markdown formatting."
+    )
+    
+    warning_text = f"Climate Alert: High Air Pollution detected in {request.location}. Current AQI is {request.mock_aqi}."
+    
+    if os.environ.get("GEMINI_API_KEY"):
+        try:
+            from google.genai import Client
+            client = Client()
+            response = client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=prompt
+            )
+            if response.text:
+                warning_text = response.text.strip()
+        except Exception as e:
+            logger.error(f"Failed to generate warning text: {e}")
+            
+    warning_payload = {
+        "location": request.location,
+        "aqi": request.mock_aqi,
+        "warning_text": warning_text
+    }
+    
+    from kafka_streamer import send_kafka_event
+    await send_kafka_event("warning", warning_payload)
+    return {"status": "triggered", "payload": warning_payload}
+
 @app.get("/api/stream/feed")
 async def stream_feed_endpoint():
     return StreamingResponse(event_generator(), media_type="text/event-stream")

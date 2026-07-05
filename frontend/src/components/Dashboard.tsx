@@ -38,6 +38,7 @@ const Dashboard: React.FC = () => {
 
   const [copied, setCopied] = useState(false);
   const [feed, setFeed] = useState<Array<{ id: number; text: string; time: string }>>([]);
+  const [warning, setWarning] = useState<{ location: string; aqi: number; warning_text: string } | null>(null);
 
   // Connect to Kafka SSE Stream
   useEffect(() => {
@@ -52,6 +53,8 @@ const Dashboard: React.FC = () => {
           eventText = `City searched: ${data.payload.location} (AQI: ${data.payload.metrics.air_quality_index})`;
         } else if (data.event_type === "calculate") {
           eventText = `Footprint math: ${data.payload.result.annual_summary.total_co2_metric_tons} tons CO2`;
+        } else if (data.event_type === "warning") {
+          setWarning(data.payload);
         }
         
         if (eventText) {
@@ -115,6 +118,48 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="dashboard-scroll" style={{ padding: '24px', overflowY: 'auto', maxHeight: 'calc(100vh - 80px)' }}>
+      {warning && (
+        <div className="warning-banner" style={{
+          background: 'rgba(239, 68, 68, 0.12)',
+          border: '1px solid rgba(239, 68, 68, 0.4)',
+          borderRadius: '12px',
+          padding: '16px 20px',
+          marginBottom: '20px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '16px',
+          animation: 'pulse-border 2s infinite alternate',
+          backdropFilter: 'blur(8px)',
+          boxShadow: '0 0 15px rgba(239, 68, 68, 0.2)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <span style={{ fontSize: '24px' }}>🚨</span>
+            <div>
+              <h4 style={{ margin: 0, color: '#f87171', fontWeight: 600, fontSize: '15px' }}>
+                Critical Air Quality Alert: {warning.location} (AQI: {warning.aqi})
+              </h4>
+              <p style={{ margin: '4px 0 0 0', color: '#fca5a5', fontSize: '13px', lineHeight: 1.4 }}>
+                {warning.warning_text}
+              </p>
+            </div>
+          </div>
+          <button 
+            onClick={() => setWarning(null)} 
+            style={{ 
+              background: 'none', 
+              border: 'none', 
+              color: '#f87171', 
+              fontSize: '22px', 
+              cursor: 'pointer',
+              lineHeight: 1,
+              padding: '4px'
+            }}
+          >
+            &times;
+          </button>
+        </div>
+      )}
       <div className="dashboard-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
         
         {/* Sliders Input Panel */}
