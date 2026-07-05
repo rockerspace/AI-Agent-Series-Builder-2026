@@ -221,6 +221,14 @@ def policies_endpoint(country: str = "India"):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/marketplace/solar")
+def marketplace_solar_endpoint(location: str = "Mumbai", monthly_kwh: float = 250.0):
+    try:
+        from mcp_server import get_solar_marketplace_quotes
+        return get_solar_marketplace_quotes(location, monthly_kwh)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 class TriggerWarningRequest(BaseModel):
     location: str = "Mumbai"
     language_code: str = "hi-IN"

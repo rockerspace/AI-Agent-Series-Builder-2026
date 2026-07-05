@@ -39,6 +39,28 @@ const Dashboard: React.FC = () => {
   const [copied, setCopied] = useState(false);
   const [feed, setFeed] = useState<Array<{ id: number; text: string; time: string }>>([]);
   const [warning, setWarning] = useState<{ location: string; aqi: number; warning_text: string } | null>(null);
+  const [solarQuote, setSolarQuote] = useState<any>(null);
+
+  // Fetch solar marketplace quotes dynamically
+  useEffect(() => {
+    const fetchSolarQuote = async () => {
+      if (electricity < 150) {
+        setSolarQuote(null);
+        return;
+      }
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+        const response = await fetch(`${apiUrl}/api/marketplace/solar?location=Mumbai&monthly_kwh=${electricity}`);
+        if (response.ok) {
+          const data = await response.json();
+          setSolarQuote(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch solar quote:", error);
+      }
+    };
+    fetchSolarQuote();
+  }, [electricity]);
 
   // Connect to Kafka SSE Stream
   useEffect(() => {
@@ -286,6 +308,58 @@ const Dashboard: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {/* Dynamic Solar Marketplace Card */}
+          {solarQuote && (
+            <div className="solar-marketplace-card" style={{ 
+              background: 'linear-gradient(135deg, rgba(234, 179, 8, 0.1) 0%, rgba(249, 115, 22, 0.04) 100%)', 
+              border: '1px solid rgba(234, 179, 8, 0.3)', 
+              padding: '20px', 
+              borderRadius: '16px', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              gap: '12px' 
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '20px' }}>☀️</span>
+                <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#facc15', margin: 0 }}>
+                  Intelligent Recommendation: Go Solar
+                </h3>
+              </div>
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: 0, lineHeight: 1.4 }}>
+                Your high electricity footprint ({electricity} kWh/mo) qualifies you for solar offset. Here is your custom installation quote:
+              </p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '12px', background: 'rgba(0,0,0,0.2)', padding: '10px', borderRadius: '8px' }}>
+                <div>Recommended System: <strong style={{ color: '#fff' }}>{solarQuote.recommended_system_size_kw} kW</strong></div>
+                <div>Net Cost: <strong style={{ color: '#facc15' }}>{solarQuote.currency === 'INR' ? '₹' : '$'}{solarQuote.net_investment_cost.toLocaleString()}</strong></div>
+                <div style={{ gridColumn: 'span 2', fontSize: '11px', color: '#86efac', marginTop: '4px' }}>
+                  ✓ Includes {solarQuote.currency === 'INR' ? '₹' : '$'}{solarQuote.government_subsidies.toLocaleString()} government subsidy
+                </div>
+              </div>
+              <div style={{ fontSize: '11px', color: '#fca5a5', fontWeight: 600 }}>
+                {solarQuote.estimated_annual_savings}
+              </div>
+              <a 
+                href={solarQuote.affiliate_referral_link} 
+                target="_blank" 
+                rel="noreferrer"
+                style={{ 
+                  background: '#eab308', 
+                  color: '#070a13', 
+                  textDecoration: 'none', 
+                  padding: '8px 12px', 
+                  borderRadius: '8px', 
+                  fontSize: '12px', 
+                  fontWeight: 700, 
+                  textAlign: 'center', 
+                  transition: 'background 0.2s',
+                  boxShadow: '0 0 10px rgba(234, 179, 8, 0.3)'
+                }}
+              >
+                Apply for Quote via {solarQuote.primary_vendor} &rarr;
+              </a>
+            </div>
+          )}
 
           {/* Offsetting Target */}
           <div className="offset-box" style={{ background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%)', border: '1px solid rgba(16, 185, 129, 0.2)', padding: '20px', borderRadius: '16px', display: 'flex', gap: '16px', alignItems: 'center' }}>

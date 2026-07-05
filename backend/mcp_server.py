@@ -228,5 +228,50 @@ def search_climate_policies(country: str) -> dict:
         "active_incentives": "Tax credits for energy efficient building components and solar applications."
     }
 
+@mcp.tool()
+def get_solar_marketplace_quotes(location: str, monthly_kwh: float) -> dict:
+    """
+    Computes solar sizing requirements, costs, state subsidies, and quotes from local solar installers.
+    
+    Args:
+        location (str): The city or country to check (e.g. Mumbai, New York).
+        monthly_kwh (float): The user's average monthly electricity usage in kWh.
+    """
+    kw_size = max(1.0, round(monthly_kwh / 120.0, 1))
+    loc_lower = location.lower().strip()
+    is_india = any(x in loc_lower for x in ["india", "mumbai", "delhi", "bengaluru", "chennai", "kolkata", "tuticorin", "tamil nadu"])
+    
+    if is_india:
+        base_cost = kw_size * 60000
+        if kw_size <= 2:
+            subsidy = kw_size * 30000
+        else:
+            subsidy = (2 * 30000) + min(1.0, kw_size - 2) * 18000
+        net_cost = max(10000, base_cost - subsidy)
+        currency = "INR"
+        vendor = "Tata Power Solar"
+        referral_link = f"https://solar.ecopulse.io/quote?vendor=tata&system={kw_size}kw&ref=ecopulse"
+        saving_msg = f"Save up to \u20b9{int(kw_size * 120 * 8 * 12)} annually (assuming \u20b98/unit utility tariff)"
+    else:
+        base_cost = kw_size * 2800
+        subsidy = base_cost * 0.30
+        net_cost = base_cost - subsidy
+        currency = "USD"
+        vendor = "Sunrun Solar"
+        referral_link = f"https://solar.ecopulse.io/quote?vendor=sunrun&system={kw_size}kw&ref=ecopulse"
+        saving_msg = f"Save up to ${int(kw_size * 120 * 0.16 * 12)} annually (assuming $0.16/kWh utility tariff)"
+        
+    return {
+        "location": location.title(),
+        "recommended_system_size_kw": kw_size,
+        "base_cost": round(base_cost, 2),
+        "government_subsidies": round(subsidy, 2),
+        "net_investment_cost": round(net_cost, 2),
+        "currency": currency,
+        "primary_vendor": vendor,
+        "estimated_annual_savings": saving_msg,
+        "affiliate_referral_link": referral_link
+    }
+
 if __name__ == "__main__":
     mcp.run()
