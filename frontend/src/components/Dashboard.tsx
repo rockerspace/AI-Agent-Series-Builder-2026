@@ -40,6 +40,42 @@ const Dashboard: React.FC = () => {
   const [feed, setFeed] = useState<Array<{ id: number; text: string; time: string }>>([]);
   const [warning, setWarning] = useState<{ location: string; aqi: number; warning_text: string } | null>(null);
   const [solarQuote, setSolarQuote] = useState<any>(null);
+  const [iotDevice, setIotDevice] = useState<any>(null);
+
+  // Fetch simulated IoT status on load
+  useEffect(() => {
+    const fetchIotStatus = async () => {
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+        const response = await fetch(`${apiUrl}/api/iot/status`);
+        if (response.ok) {
+          const data = await response.json();
+          setIotDevice(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch IoT status:", error);
+      }
+    };
+    fetchIotStatus();
+  }, []);
+
+  const handleThermostatChange = async (temp: number) => {
+    if (!iotDevice) return;
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+      const response = await fetch(`${apiUrl}/api/iot/control`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ device_id: 'nest-thermostat-1', target_temp: temp }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setIotDevice(data.device);
+      }
+    } catch (error) {
+      console.error("Failed to control IoT thermostat:", error);
+    }
+  };
 
   // Fetch solar marketplace quotes dynamically
   useEffect(() => {
@@ -77,6 +113,15 @@ const Dashboard: React.FC = () => {
           eventText = `Footprint math: ${data.payload.result.annual_summary.total_co2_metric_tons} tons CO2`;
         } else if (data.event_type === "warning") {
           setWarning(data.payload);
+        } else if (data.event_type === "iot_control") {
+          eventText = `Smart Home Action: Set Thermostat to ${data.payload.target_temp}°C (Grid Load: ${data.payload.power_draw_kw}kW)`;
+          setIotDevice((prev: any) => prev ? { 
+            ...prev, 
+            target_temperature_c: data.payload.target_temp, 
+            power_draw_kw: data.payload.power_draw_kw,
+            mode: data.payload.mode,
+            saving_mode: data.payload.target_temp >= 24.0
+          } : null);
         }
         
         if (eventText) {
@@ -244,6 +289,68 @@ const Dashboard: React.FC = () => {
               />
               <span style={{ fontSize: '11px', color: 'var(--text-dim)', display: 'block', marginTop: '4px' }}>Meat products (especially beef) carry heavy livestock emission factors.</span>
             </div>
+          </div>
+
+          {/* IoT Smart Home Telemetry Card */}
+          <div className="glass-card" style={{ padding: '24px', borderRadius: '16px', border: '1px solid var(--border-glass)', background: 'var(--bg-glass)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <h2 style={{ fontSize: '16px', fontWeight: 600, borderBottom: '1px solid var(--border-glass)', paddingBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+              <span style={{ fontSize: '18px' }}>🔌</span> Smart Home IoT Telemetry
+            </h2>
+            
+            {iotDevice ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Device Name:</span>
+                  <strong style={{ color: '#fff' }}>{iotDevice.device_name}</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Current Temp / Target:</span>
+                  <strong style={{ color: '#fff' }}>{iotDevice.current_temperature_c}°C / {iotDevice.target_temperature_c}°C</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Real-time Power Draw:</span>
+                  <strong style={{ color: 'var(--primary-cyan)' }}>{iotDevice.power_draw_kw} kW</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Device Mode:</span>
+                  <span style={{ 
+                    padding: '2px 8px', 
+                    borderRadius: '12px', 
+                    fontSize: '11px', 
+                    fontWeight: 600,
+                    background: iotDevice.saving_mode ? 'rgba(16, 185, 129, 0.15)' : 'rgba(59, 130, 246, 0.15)',
+                    border: iotDevice.saving_mode ? '1px solid #10b981' : '1px solid #3b82f6',
+                    color: iotDevice.saving_mode ? '#10b981' : '#3b82f6'
+                  }}>
+                    {iotDevice.mode.toUpperCase()}
+                  </span>
+                </div>
+
+                {/* Thermostat adjustment slider */}
+                <div style={{ marginTop: '8px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '12px', color: 'var(--text-muted)' }}>
+                    <span>Adjust Cooling Temp Target</span>
+                    <span>{iotDevice.target_temperature_c}°C</span>
+                  </div>
+                  <input 
+                    type="range" 
+                    min="20" 
+                    max="28" 
+                    step="0.5" 
+                    value={iotDevice.target_temperature_c}
+                    onChange={(e) => handleThermostatChange(Number(e.target.value))}
+                    style={{ width: '100%', accentColor: 'var(--primary-cyan)' }}
+                  />
+                  <span style={{ fontSize: '10px', color: 'var(--text-dim)', display: 'block', marginTop: '4px' }}>
+                    Setting thermostat to 24°C or above enables ECO mode, cutting carbon footprint load autonomously.
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div style={{ fontSize: '12px', color: 'var(--text-dim)', textAlign: 'center', padding: '10px 0' }}>
+                Connecting to Google Nest smart devices...
+              </div>
+            )}
           </div>
 
           {/* Quick Info Box */}

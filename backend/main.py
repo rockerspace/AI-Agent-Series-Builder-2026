@@ -229,6 +229,35 @@ def marketplace_solar_endpoint(location: str = "Mumbai", monthly_kwh: float = 25
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+class IoTControlRequest(BaseModel):
+    device_id: str = "nest-thermostat-1"
+    target_temp: float
+
+@app.get("/api/iot/status")
+def iot_status_endpoint(device_id: str = "nest-thermostat-1"):
+    try:
+        from mcp_server import get_smart_device_status
+        return get_smart_device_status(device_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/iot/control")
+async def iot_control_endpoint(request: IoTControlRequest):
+    try:
+        from mcp_server import adjust_smart_thermostat
+        res = adjust_smart_thermostat(request.device_id, request.target_temp)
+        if "error" in res:
+            raise HTTPException(status_code=400, detail=res["error"])
+        await send_kafka_event("iot_control", {
+            "device_id": request.device_id,
+            "target_temp": request.target_temp,
+            "power_draw_kw": res["device"]["power_draw_kw"],
+            "mode": res["device"]["mode"]
+        })
+        return res
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 class TriggerWarningRequest(BaseModel):
     location: str = "Mumbai"
     language_code: str = "hi-IN"

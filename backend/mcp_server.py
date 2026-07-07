@@ -273,5 +273,52 @@ def get_solar_marketplace_quotes(location: str, monthly_kwh: float) -> dict:
         "affiliate_referral_link": referral_link
     }
 
+# Simulated IoT smart home state
+SMART_HOME_DEVICES = {
+    "nest-thermostat-1": {
+        "device_name": "Google Nest Thermostat",
+        "current_temperature_c": 24.5,
+        "target_temperature_c": 22.0,
+        "power_draw_kw": 2.2,
+        "mode": "cooling",
+        "saving_mode": False
+    }
+}
+
+@mcp.tool()
+def get_smart_device_status(device_id: str = "nest-thermostat-1") -> dict:
+    """
+    Retrieves the real-time status of a smart home thermostat or smart meter.
+    
+    Args:
+        device_id (str): The identifier of the smart device.
+    """
+    if device_id in SMART_HOME_DEVICES:
+        return SMART_HOME_DEVICES[device_id]
+    return {"error": "Device not found"}
+
+@mcp.tool()
+def adjust_smart_thermostat(device_id: str = "nest-thermostat-1", target_temp: float = 24.0) -> dict:
+    """
+    Updates the target cooling/heating temperature of a smart thermostat to reduce energy load.
+    
+    Args:
+        device_id (str): The identifier of the smart thermostat.
+        target_temp (float): The new target cooling temperature in degrees Celsius.
+    """
+    if device_id in SMART_HOME_DEVICES:
+        device = SMART_HOME_DEVICES[device_id]
+        device["target_temperature_c"] = target_temp
+        difference = max(0.0, target_temp - 22.0)
+        device["power_draw_kw"] = max(0.5, round(2.2 - (difference * 0.4), 2))
+        device["saving_mode"] = target_temp >= 24.0
+        device["mode"] = "eco" if device["saving_mode"] else "cooling"
+        return {
+            "status": "success",
+            "message": f"Thermostat target set to {target_temp}C",
+            "device": device
+        }
+    return {"error": "Device not found"}
+
 if __name__ == "__main__":
     mcp.run()
