@@ -33,6 +33,77 @@ const Pulse: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Render Leaflet Map dynamically
+  useEffect(() => {
+    if (!metrics || !metrics.coordinates) return;
+    
+    const loadLeaflet = () => {
+      const container = document.getElementById('climate-map');
+      if (!container) return;
+      
+      container.innerHTML = '';
+      const mapDiv = document.createElement('div');
+      mapDiv.id = 'map-instance';
+      mapDiv.style.width = '100%';
+      mapDiv.style.height = '100%';
+      mapDiv.style.borderRadius = '12px';
+      container.appendChild(mapDiv);
+      
+      const { lat, lon } = metrics.coordinates;
+      
+      // @ts-ignore
+      if (typeof window.L !== 'undefined') {
+        // @ts-ignore
+        const map = window.L.map('map-instance').setView([lat, lon], 12);
+        
+        // @ts-ignore
+        window.L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+          attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+        }).addTo(map);
+        
+        const aqiColor = metrics.air_quality_index <= 50 ? '#10b981' : (metrics.air_quality_index <= 100 ? '#eab308' : '#ef4444');
+        
+        // @ts-ignore
+        window.L.circle([lat, lon], {
+          color: aqiColor,
+          fillColor: aqiColor,
+          fillOpacity: 0.15,
+          radius: 4000
+        }).addTo(map);
+
+        // @ts-ignore
+        window.L.circle([lat, lon], {
+          color: '#f97316',
+          fillColor: '#f97316',
+          fillOpacity: 0.10,
+          radius: 8000
+        }).addTo(map);
+        
+        // @ts-ignore
+        const marker = window.L.marker([lat, lon]).addTo(map);
+        marker.bindPopup(`<b>${metrics.location}</b><br>AQI: ${metrics.air_quality_index}<br>Risk Index: ${metrics.extreme_weather_risk_index}/10`).openPopup();
+      }
+    };
+    
+    if (!document.getElementById('leaflet-css')) {
+      const link = document.createElement('link');
+      link.id = 'leaflet-css';
+      link.rel = 'stylesheet';
+      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+      document.head.appendChild(link);
+    }
+    
+    if (!document.getElementById('leaflet-js')) {
+      const script = document.createElement('script');
+      script.id = 'leaflet-js';
+      script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+      script.onload = loadLeaflet;
+      document.head.appendChild(script);
+    } else {
+      setTimeout(loadLeaflet, 200);
+    }
+  }, [metrics]);
+
   const handleSearch = async () => {
     if (!search.trim()) return;
     setLoading(true);
@@ -131,6 +202,22 @@ const Pulse: React.FC = () => {
                   <Globe size={12} /> Lat: {metrics.coordinates.lat.toFixed(2)} | Lon: {metrics.coordinates.lon.toFixed(2)}
                 </span>
               </div>
+
+              {/* Geospatial Climate Risk Map */}
+              <div 
+                id="climate-map" 
+                style={{ 
+                  width: '100%', 
+                  height: '320px', 
+                  borderRadius: '16px', 
+                  background: 'rgba(0,0,0,0.3)', 
+                  border: '1px solid var(--border-glass)', 
+                  marginBottom: '24px', 
+                  overflow: 'hidden',
+                  position: 'relative',
+                  zIndex: 1
+                }} 
+              />
 
               <div className="metrics-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '24px' }}>
                 

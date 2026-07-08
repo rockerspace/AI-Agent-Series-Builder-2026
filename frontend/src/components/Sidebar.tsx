@@ -1,5 +1,5 @@
 import React from 'react';
-import { MessageSquare, Calculator, Globe, Shield, Mic } from 'lucide-react';
+import { MessageSquare, Calculator, Globe, Shield, Mic, RefreshCw } from 'lucide-react';
 
 interface SidebarProps {
   activeTab: string;
@@ -10,6 +10,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
   const menuItems = [
     { id: 'chat', label: 'Aura Chat', icon: MessageSquare },
     { id: 'calculator', label: 'Carbon Tracker', icon: Calculator },
+    { id: 'negotiate', label: 'Offset Bidding', icon: RefreshCw },
     { id: 'pulse', label: 'Climate Pulse', icon: Globe },
     { id: 'voice', label: 'Eco Voice', icon: Mic },
   ];

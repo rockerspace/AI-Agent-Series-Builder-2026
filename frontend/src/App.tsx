@@ -4,6 +4,7 @@ import Chat from './components/Chat.tsx';
 import Dashboard from './components/Dashboard.tsx';
 import Pulse from './components/Pulse.tsx';
 import Voice from './components/Voice.tsx';
+import Negotiations from './components/Negotiations.tsx';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('chat');
@@ -14,6 +15,8 @@ const App: React.FC = () => {
         return 'Aura AI Agent Chat';
       case 'calculator':
         return 'Personal Carbon Footprint Tracker';
+      case 'negotiate':
+        return 'Offset Bidding Room (Agent-to-Agent)';
       case 'pulse':
         return 'Global Ecological Pulse & Policies';
       case 'voice':
@@ -43,6 +46,7 @@ const App: React.FC = () => {
         {/* Tab Body Rendering */}
         {activeTab === 'chat' && <Chat />}
         {activeTab === 'calculator' && <Dashboard />}
+        {activeTab === 'negotiate' && <Negotiations />}
         {activeTab === 'pulse' && <Pulse />}
         {activeTab === 'voice' && <Voice />}
       </main>

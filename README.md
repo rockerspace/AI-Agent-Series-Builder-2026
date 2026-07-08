@@ -33,6 +33,8 @@ By unifying multi-persona agent coordination, live environmental tools, and nati
 * **Integrated Green Marketplace Broker**: Turn conversational recommendations into direct commercial action. If a user's electricity footprint is high, the agent queries local solar vendors via MCP, provides an exact installation sizing and quote (accounting for PM Surya Ghar state subsidies in India or ITC credits in the US), and delivers a direct affiliate referral checkout link.
 * **Smart Home & IoT Telemetry**: Connects directly to smart devices (e.g., Google Nest thermostats). Users can check current temperatures and real-time power draw (kW) or adjust cooling targets directly. The ADK Agent can query status via `get_smart_device_status` and autonomously transition devices into energy-saving `ECO` modes via `adjust_smart_thermostat` during high-grid-intensity carbon cycles.
 * **Climate Pulse Geographical Profiler**: Look up localized environmental metrics (Decadal warming indices, Air Quality Indexes, renewable energy grid mixes) and country-specific Net-Zero policy targets.
+* **Interactive Climate Risk Geospatial Map**: Renders an interactive Leaflet-powered dark map layer dynamically. Overlays concentric heat buffers and AQI boundaries to visualize air pollution contours and decadal warming anomalies directly over the searched city.
+* **Agent-to-Agent Carbon Offset Bidding**: Features a simulated multi-agent Bidding Room. Your personal EcoPulse Buyer Agent autonomously requests proposals, reviews certification verification grades, and negotiates bulk pricing against Pachama (Reforestation), Gold Standard (Methane Capture), and CleanAir (Solar grid offsets) registries in real-time.
 * **Social Engagement**: Single-click copy badge to share Eco-Scores (A+ through F) directly to LinkedIn.
 * **Streaming Tool Feedback**: The UI renders status chips dynamically to show when the ADK Agent is invoking MCP tools (e.g. `[Running tool: calculate_carbon_footprint]`).
 
@@ -190,7 +192,8 @@ AI-Agent-Series-Builder-2026/
 │   │   │   ├── Chat.tsx      # Agentic chat panel with streaming SSE
 │   │   │   ├── Dashboard.tsx # Carbon calculator graph panel
 │   │   │   ├── Pulse.tsx     # Climate profiling search
-│   │   │   └── Voice.tsx     # Multilingual voice mode component
+│   │   │   ├── Voice.tsx     # Multilingual voice mode component
+│   │   │   └── Negotiations.tsx # Agent-to-Agent offset bidding room
 │   │   ├── App.tsx           # Layout coordinating tabs
 │   │   ├── index.css         # Curated HSL dark/emerald design system
 │   │   └── main.tsx          # Bootstrapper
