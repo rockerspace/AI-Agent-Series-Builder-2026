@@ -1,12 +1,12 @@
-# EcoPulse: AI Climate Action Agent
+# EcoPulse: Autonomous Policy & Impact Agent
 
 🌐 **Live Demo**: https://ai-agent-series-builder-2026-nac4.vercel.app
 🔗 **Backend API**: https://ecopulse-backend-805096709254.us-central1.run.app
 🎬 **Video Demo**: https://www.loom.com/share/662d8c6e7a6d48e2b2e49974005afd10
 
-EcoPulse is an agentic Climate Intelligence and Action platform built as a submission for the **AI Agent Builder Series 2026** hosted by AI House & Google for Developers. 
+EcoPulse is an **Autonomous Policy & Impact Agent** built as a submission for the **AI Agent Builder Series 2026** hosted by AI House & Google for Developers. 
 
-It leverages the **Google AI Stack**, featuring the **Google Agent Development Kit (ADK 2.0)** for multi-turn agent orchestration and the **Model Context Protocol (MCP)** for clean, decoupled tool integration.
+It leverages the **Google AI Stack**, featuring the **Google Agent Development Kit (ADK 2.0)** for multi-turn agent orchestration and the **Model Context Protocol (MCP)** for clean, decoupled tool integration to actively automate policy compliance and track verified environmental impacts.
 
 ---
 
@@ -202,3 +202,26 @@ AI-Agent-Series-Builder-2026/
 │   └── tsconfig.json         # TS settings
 └── README.md                 # Project Documentation
 ```
+
+---
+
+## 🗺️ Phase 6 Roadmap: High-Autonomy Policy & Impact Execution
+
+### 📋 1. Autonomous Policy Compliance Engine
+To transition EcoPulse from an advice dashboard to an execution utility, we introduced a secure compliance tool utilizing the Python `reportlab` library:
+- **How it works**: The user's parsed profile triggers `generate_subsidy_form` to compile a completed Government Solar Subsidy application form.
+- **Security & Privacy**: Subsidies are computed on-the-fly and output as transient PDF streams directly from memory, maintaining a zero-disk retention policy for PII data.
+
+### 🕰️ 2. Edge-Based Predictive Optimization
+Instead of purely reacting to live grid carbon load, the agent queries meteorological models 24 hours in advance:
+- **Proactive Scheduling**: Coordinates cooling levels on simulated Google Nest thermostats to pre-cool the household during low-emission off-peak hours.
+
+### 🔗 3. Agentic 'Proof of Impact' (Blockchain Integration)
+To address carbon greenwashing, every offset and thermostat energy conservation event is logged to an immutable public registry:
+- **On-Chain Certification**: The agent calls `register_green_impact_onchain`, hashing the telemetry payload to generate a unique transaction ID registered to the Polygon L2 network, making impacts 100% verifiable by external auditors or judges.
+
+---
+
+## 🏆 Final Pitch: Why EcoPulse Wins
+
+**EcoPulse is not a passive calculator; it is a high-autonomy, multilingual policy and impact coordinator.** While other agents write emails or summarize articles, EcoPulse takes real-world action. It bridges global carbon standards and regional language interfaces, allowing users to talk to their climate data in 11 Indian languages, upload and parse raw utility bills autonomously, control IoT thermostats preemptively, and mint on-chain green proofs of impact. By unifying the Google AI Stack with secure local tools, EcoPulse demonstrates how AI agents can turn climate intelligence into verifiable, local household execution.

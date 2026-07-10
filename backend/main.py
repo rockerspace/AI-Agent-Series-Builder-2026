@@ -258,6 +258,51 @@ async def iot_control_endpoint(request: IoTControlRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+from fastapi.responses import FileResponse
+
+class SubsidyFormRequest(BaseModel):
+    location: str
+    monthly_kwh: float
+    applicant_name: str = "Narendra Venkatesan"
+
+class BlockchainRegisterRequest(BaseModel):
+    user_id: str = "default_user"
+    impact_type: str
+    metric_value: float
+
+@app.post("/api/policy/generate-pdf")
+def generate_pdf_endpoint(request: SubsidyFormRequest):
+    try:
+        from mcp_server import generate_subsidy_form
+        res = generate_subsidy_form(request.location, request.monthly_kwh, request.applicant_name)
+        if "error" in res:
+            raise HTTPException(status_code=500, detail=res["error"])
+        return FileResponse(
+            path=res["pdf_path"],
+            filename="eco_subsidy_form.pdf",
+            media_type="application/pdf"
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/blockchain/register")
+async def register_blockchain_endpoint(request: BlockchainRegisterRequest):
+    try:
+        from mcp_server import register_green_impact_onchain
+        res = register_green_impact_onchain(request.user_id, request.impact_type, request.metric_value)
+        if "error" in res:
+            raise HTTPException(status_code=400, detail=res["error"])
+        await send_kafka_event("blockchain_impact", {
+            "user_id": request.user_id,
+            "impact_type": request.impact_type,
+            "metric_value": request.metric_value,
+            "tx_hash": res["transaction_hash"],
+            "blockchain": res["blockchain"]
+        })
+        return res
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 class TriggerWarningRequest(BaseModel):
     location: str = "Mumbai"
     language_code: str = "hi-IN"

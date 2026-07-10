@@ -122,6 +122,8 @@ const Dashboard: React.FC = () => {
             mode: data.payload.mode,
             saving_mode: data.payload.target_temp >= 24.0
           } : null);
+        } else if (data.event_type === "blockchain_impact") {
+          eventText = `🔗 On-Chain Verified: Registered ${data.payload.impact_type} of ${data.payload.metric_value} (Tx: ${data.payload.tx_hash.slice(0, 10)}...)`;
         }
         
         if (eventText) {
