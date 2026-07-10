@@ -222,6 +222,3 @@ To address carbon greenwashing, every offset and thermostat energy conservation 
 
 ---
 
-## 🏆 Final Pitch: Why EcoPulse Wins
-
-**EcoPulse is not a passive calculator; it is a high-autonomy, multilingual policy and impact coordinator.** While other agents write emails or summarize articles, EcoPulse takes real-world action. It bridges global carbon standards and regional language interfaces, allowing users to talk to their climate data in 11 Indian languages, upload and parse raw utility bills autonomously, control IoT thermostats preemptively, and mint on-chain green proofs of impact. By unifying the Google AI Stack with secure local tools, EcoPulse demonstrates how AI agents can turn climate intelligence into verifiable, local household execution.
