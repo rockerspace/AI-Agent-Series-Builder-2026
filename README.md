@@ -180,9 +180,11 @@ AI-Agent-Series-Builder-2026/
 │   ├── .env                  # Environment keys
 │   ├── requirements.txt      # Python packages (google-adk, fastmcp)
 │   ├── Dockerfile            # Container definition for Cloud Run
+│   ├── config.py             # Pydantic BaseSettings config module
 │   ├── mcp_server.py         # MCP Climate tools definition
 │   ├── agent.py              # ADK Agent and Runner configuration
-│   └── main.py               # FastAPI endpoints & async generators
+│   ├── main.py               # FastAPI endpoints & async generators
+│   └── test_backend.py       # Pytest unit and integration tests
 ├── frontend/
 │   ├── public/
 │   │   └── logo.png          # Pulsating brand logo asset
@@ -194,7 +196,10 @@ AI-Agent-Series-Builder-2026/
 │   │   │   ├── Pulse.tsx     # Climate profiling search
 │   │   │   ├── Voice.tsx     # Multilingual voice mode component
 │   │   │   └── Negotiations.tsx # Agent-to-Agent offset bidding room
+│   │   ├── store/
+│   │   │   └── useStore.ts   # Zustand global application state store
 │   │   ├── App.tsx           # Layout coordinating tabs
+│   │   ├── App.test.tsx      # Vitest spec for state transitions
 │   │   ├── index.css         # Curated HSL dark/emerald design system
 │   │   └── main.tsx          # Bootstrapper
 │   ├── index.html            # Entry HTML loading google fonts
@@ -202,6 +207,23 @@ AI-Agent-Series-Builder-2026/
 │   └── tsconfig.json         # TS settings
 └── README.md                 # Project Documentation
 ```
+
+---
+
+## 🧪 Testing, Centralized Config, and Zustand State management
+
+### ⚙️ Centralized Settings & Error Handling
+- **Pydantic BaseSettings**: All backend environmental variables (Gemini/Sarvam keys, Kafka servers, ports) are centralized in `config.py`.
+- **Refined Exceptions**: Coordinates semantic error mapping in `mcp_server.py`. Distinguishes between:
+  - `ValueError` (City not found -> maps to HTTP 404 in API).
+  - `ConnectionError` (Geocoding network timeout -> maps to HTTP 503 Service Unavailable).
+
+### 📦 Zustand State Store
+- Centralizes active tab navigation, live warning beacons, Nest IoT status, and the event logging feed in `frontend/src/store/useStore.ts` for clean, modular React rendering.
+
+### 🧪 Automated Testing Suites
+- **Backend (Pytest)**: Offline, deterministic API testing with MagicMock mocks. Run `./venv/bin/pytest test_backend.py`.
+- **Frontend (Vitest)**: Testing store transitions and actions. Run `npm run test`.
 
 ---
 

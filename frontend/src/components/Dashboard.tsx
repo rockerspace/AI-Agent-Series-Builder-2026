@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Leaf, Info, Share2, Award, Zap, Plane, Smartphone } from 'lucide-react';
+import { useStore } from '../store/useStore.ts';
 
 interface CalculationResult {
   monthly_summary: {
@@ -37,10 +38,16 @@ const Dashboard: React.FC = () => {
   });
 
   const [copied, setCopied] = useState(false);
-  const [feed, setFeed] = useState<Array<{ id: number; text: string; time: string }>>([]);
-  const [warning, setWarning] = useState<{ location: string; aqi: number; warning_text: string } | null>(null);
   const [solarQuote, setSolarQuote] = useState<any>(null);
-  const [iotDevice, setIotDevice] = useState<any>(null);
+  
+  const { 
+    feed, 
+    addFeed, 
+    warning, 
+    setWarning, 
+    iotDevice, 
+    setIotDevice 
+  } = useStore();
 
   // Fetch simulated IoT status on load
   useEffect(() => {
@@ -127,10 +134,7 @@ const Dashboard: React.FC = () => {
         }
         
         if (eventText) {
-          setFeed((prev) => [
-            { id: Date.now() + Math.random(), text: eventText, time: new Date().toLocaleTimeString() },
-            ...prev.slice(0, 4)
-          ]);
+          addFeed(eventText);
         }
       } catch (err) {
         console.error("SSE parse error", err);

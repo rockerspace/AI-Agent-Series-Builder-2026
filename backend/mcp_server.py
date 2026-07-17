@@ -65,14 +65,16 @@ def get_city_coordinates(city: str):
     """Fetches latitude, longitude, and country from Open-Meteo Geocoding API."""
     try:
         url = f"https://geocoding-api.open-meteo.com/v1/search?name={requests.utils.quote(city)}&count=1&language=en&format=json"
-        res = requests.get(url, timeout=5).json()
+        response = requests.get(url, timeout=5)
+        response.raise_for_status()
+        res = response.json()
         if "results" in res and len(res["results"]) > 0:
             first = res["results"][0]
             return first["latitude"], first["longitude"], first.get("country", "Unknown")
-    except Exception as e:
-        print(f"Error in geocoding: {e}")
-    # Default backup coordinates (Bengaluru)
-    return 12.9716, 77.5946, "India"
+        else:
+            raise ValueError(f"City '{city}' not found in global databases.")
+    except requests.exceptions.RequestException as e:
+        raise ConnectionError(f"Geocoding API connection error: {str(e)}")
 
 @mcp.tool()
 def get_climate_metrics(location: str) -> dict:

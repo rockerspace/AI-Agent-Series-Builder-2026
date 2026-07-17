@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import Sidebar from './components/Sidebar.tsx';
 import Chat from './components/Chat.tsx';
 import Dashboard from './components/Dashboard.tsx';
@@ -6,8 +6,10 @@ import Pulse from './components/Pulse.tsx';
 import Voice from './components/Voice.tsx';
 import Negotiations from './components/Negotiations.tsx';
 
+import { useStore } from './store/useStore.ts';
+
 const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<string>('chat');
+  const { activeTab, setActiveTab } = useStore();
 
   const getHeaderTitle = () => {
     switch (activeTab) {

@@ -12,16 +12,15 @@ class TTSRequest(BaseModel):
     language_code: str = "hi-IN"
     model: str = "bulbul:v3"
 
-# Load env variables from .env
-load_dotenv()
+from config import settings
 
 # Initialize logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("EcoPulseBackend")
 
 # Verify GEMINI_API_KEY is present
-if not os.environ.get("GEMINI_API_KEY"):
-    logger.warning("GEMINI_API_KEY is missing from environment! Agent operations will fail.")
+if not settings.gemini_api_key:
+    logger.warning("GEMINI_API_KEY is missing from config settings! Agent operations will fail.")
 
 from agent import get_climate_agent
 from mcp_server import get_climate_metrics, calculate_carbon_footprint, search_climate_policies
@@ -200,7 +199,14 @@ async def metrics_endpoint(location: str = "Bengaluru"):
         save_search_event(location, res)
         await send_kafka_event("search", {"location": location, "metrics": res})
         return res
+    except ValueError as e:
+        logger.warning(f"City not found: {str(e)}")
+        raise HTTPException(status_code=404, detail=str(e))
+    except ConnectionError as e:
+        logger.error(f"Geocoding API network error: {str(e)}")
+        raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
+        logger.error(f"Unexpected error in metrics: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/calculate")
