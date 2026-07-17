@@ -1,4 +1,3 @@
-import { describe, it, expect } from 'vitest';
 import { useStore } from './store/useStore';
 
 describe('Zustand Global App Store', () => {

@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "jest"
   },
   "dependencies": {
     "firebase": "^10.8.0",
@@ -19,12 +19,16 @@
   },
   "devDependencies": {
     "@testing-library/react": "^16.3.2",
+    "@types/jest": "^30.0.0",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",
+    "jest": "^30.4.2",
+    "jest-environment-jsdom": "^30.4.1",
     "jsdom": "^29.1.1",
+    "rolldown": "^1.2.0",
+    "ts-jest": "^29.4.11",
     "typescript": "^5.5.3",
-    "vite": "^5.4.1",
-    "vitest": "^4.1.10"
+    "vite": "^5.4.1"
   }
 }
