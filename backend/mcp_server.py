@@ -62,7 +62,7 @@ COUNTRY_POLICY_DATABASE = {
 }
 
 def get_city_coordinates(city: str):
-    """Fetches latitude, longitude, and country from Open-Meteo Geocoding API."""
+    """Fetches latitude, longitude, and country from Open-Meteo Geocoding API with OSM Nominatim fallback."""
     try:
         url = f"https://geocoding-api.open-meteo.com/v1/search?name={requests.utils.quote(city)}&count=1&language=en&format=json"
         response = requests.get(url, timeout=5)
@@ -72,7 +72,22 @@ def get_city_coordinates(city: str):
             first = res["results"][0]
             return first["latitude"], first["longitude"], first.get("country", "Unknown")
         else:
-            raise ValueError(f"City '{city}' not found in global databases.")
+            # Fallback to OpenStreetMap Nominatim for states/countries/regions
+            osm_url = f"https://nominatim.openstreetmap.org/search?q={requests.utils.quote(city)}&format=json&limit=1"
+            headers = {"User-Agent": "EcoPulseClimateAgent/1.0"}
+            osm_response = requests.get(osm_url, headers=headers, timeout=5)
+            osm_response.raise_for_status()
+            osm_data = osm_response.json()
+            if isinstance(osm_data, list) and len(osm_data) > 0:
+                first = osm_data[0]
+                lat = float(first["lat"])
+                lon = float(first["lon"])
+                display_name = first.get("display_name", "")
+                country_parts = [p.strip() for p in display_name.split(",")]
+                country = country_parts[-1] if country_parts else "Unknown"
+                return lat, lon, country
+            
+            raise ValueError(f"Location '{city}' not found in global databases.")
     except requests.exceptions.RequestException as e:
         raise ConnectionError(f"Geocoding API connection error: {str(e)}")
 
