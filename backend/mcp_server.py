@@ -160,30 +160,50 @@ def get_climate_metrics(location: str) -> dict:
 @mcp.tool()
 def calculate_carbon_footprint(transport_km: float, electricity_kwh: float, meals: int) -> dict:
     """
-    Calculates carbon footprint based on transportation, electricity usage, and diet.
+    Calculates the carbon footprint based on transportation, electricity usage, and diet.
+    
+    This function applies the Greenhouse Gas (GHG) Protocol emission factors to calculate
+    monthly and annual CO2 footprints. It also computes tree-planting requirements to
+    achieve net-zero offset balance.
     
     Args:
         transport_km (float): Monthly distance traveled by private vehicle (car/motorbike) in kilometers.
         electricity_kwh (float): Monthly household electricity usage in kilowatt-hours.
         meals (int): Monthly count of meat-based meals consumed.
+        
+    Returns:
+        dict: Summary containing monthly/annual footprint, tree requirements, and equivalents.
     """
-    # Emission Factors (Typical standards in kg CO2)
+    # --- Emission Factors (Typical standards in kg CO2) ---
+    # 0.18 kg CO2 per km for average gasoline passenger vehicles
     transport_co2 = round(transport_km * 0.18, 1)
+    
+    # 0.40 kg CO2 per kWh for average grid energy production mixes
     electricity_co2 = round(electricity_kwh * 0.40, 1)
+    
+    # 2.1 kg CO2 per meal for average beef/poultry livestock footprints
     diet_co2 = round(meals * 2.1, 1)
     
+    # Sum monthly emissions and round to one decimal place
     total_co2_kg = round(transport_co2 + electricity_co2 + diet_co2, 1)
+    
+    # Calculate annual CO2 footprint (converted to metric tons: 1000 kg = 1 ton)
     total_co2_tons_annual = round((total_co2_kg * 12) / 1000, 2)
     
-    # 1 tree absorbs ~22 kg CO2 per year
+    # --- Tree Offset Calculation ---
+    # 1 mature tree absorbs approximately 22 kg of CO2 per year.
+    # Formula: annual_co2_kg / 22_kg_per_tree
     trees_offset_needed = int(math.ceil((total_co2_kg * 12) / 22))
     
-    # Comparison tiers
+    # Categorize emission scale compared to average global thresholds
     comparison = "High" if total_co2_tons_annual > 6.0 else ("Moderate" if total_co2_tons_annual > 2.5 else "Low")
     
-    # Real-world impact analogies
-    smartphone_charges = int(total_co2_kg * 121) # 1 kg CO2 ~ 121 smartphone charges
-    flight_km_equivalent = int(total_co2_kg / 0.115) # avg economy flight emissions
+    # --- Real-World Analogies ---
+    # 1 kg CO2 is equivalent to charging approximately 121 modern smartphones.
+    smartphone_charges = int(total_co2_kg * 121)
+    
+    # Average economy flight emits 0.115 kg CO2 per passenger kilometer.
+    flight_km_equivalent = int(total_co2_kg / 0.115)
     
     return {
         "monthly_summary": {
