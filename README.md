@@ -224,7 +224,24 @@ AI-Agent-Series-Builder-2026/
 
 ### 🧪 Automated Testing Suites
 - **Backend (Pytest)**: Offline, deterministic API testing with MagicMock mocks. Run `./venv/bin/pytest test_backend.py`.
-- **Frontend (Vitest)**: Testing store transitions and actions. Run `npm run test`.
+- **Frontend (Jest)**: Testing Zustand store transitions and active UI state actions. Run `npm run test` inside the `frontend/` directory.
+
+---
+
+## 🚀 CI/CD Pipeline (GitHub Actions)
+
+We have configured an automated CI/CD pipeline in `.github/workflows/ci-cd.yml` to ensure high release velocity and code quality:
+
+### ⚙️ Pipeline Jobs:
+1. **Frontend Test Suite**: Installs dependencies (`npm ci`) and runs the Jest tests using Node.js v22.
+2. **Backend Test Suite**: Sets up Python 3.12, installs dependencies, and runs the Pytest assertions.
+3. **Vercel Deploy**: On merge/push to `main`, automatically compiles the React code and deploys it to the live production server (requires `VERCEL_TOKEN` secret).
+4. **Google Cloud Run Deploy**: On merge/push to `main`, automatically compiles the FastAPI backend container and deploys it to Google Cloud Run (requires `GCP_SA_KEY` secret).
+
+### 🔑 Repository Secrets Required:
+To run the CD deployment stages, configure the following secrets in your GitHub repository (**Settings ➔ Secrets and variables ➔ Actions**):
+*   `VERCEL_TOKEN`: Vercel Personal Access Token.
+*   `GCP_SA_KEY`: Service Account JSON credentials key with `Cloud Run Developer`, `Storage Admin`, and `Cloud Build Developer` roles.
 
 ---
 
