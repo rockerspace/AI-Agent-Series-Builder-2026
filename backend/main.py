@@ -27,6 +27,10 @@ else:
 if settings.sarvam_api_key:
     os.environ["SARVAM_API_KEY"] = settings.sarvam_api_key
 
+# Disable GCE metadata server check to force AI Studio API Key authentication on Cloud Run
+os.environ["NO_GCE_CHECK"] = "true"
+os.environ.pop("GOOGLE_APPLICATION_CREDENTIALS", None)
+
 from agent import get_climate_agent
 from mcp_server import get_climate_metrics, calculate_carbon_footprint, search_climate_policies
 from firebase_db import save_search_event, save_carbon_event
