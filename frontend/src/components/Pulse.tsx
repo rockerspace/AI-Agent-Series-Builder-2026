@@ -104,20 +104,19 @@ const Pulse: React.FC = () => {
     }
   }, [metrics]);
 
-  const handleSearch = async () => {
-    if (!search.trim()) return;
+  const fetchMetrics = async (locationTerm: string) => {
+    if (!locationTerm.trim()) return;
     setLoading(true);
     setError(null);
     try {
       const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
-      const metricsRes = await fetch(`${apiUrl}/api/metrics?location=${encodeURIComponent(search)}`);
+      const metricsRes = await fetch(`${apiUrl}/api/metrics?location=${encodeURIComponent(locationTerm)}`);
       
       if (metricsRes.ok) {
         const metricsData = await metricsRes.json();
         setMetrics(metricsData);
         
-        // Use the resolved country from geocoding to query policies
-        const resolvedCountry = metricsData.country || search;
+        const resolvedCountry = metricsData.country || locationTerm;
         const policyRes = await fetch(`${apiUrl}/api/policies?country=${encodeURIComponent(resolvedCountry)}`);
         if (policyRes.ok) {
           const policyData = await policyRes.json();
@@ -134,9 +133,18 @@ const Pulse: React.FC = () => {
     }
   };
 
+  const handleSearch = () => {
+    fetchMetrics(search);
+  };
+
   useEffect(() => {
-    handleSearch();
-  }, []);
+    if (!search.trim()) return;
+    const delayDebounceFn = setTimeout(() => {
+      fetchMetrics(search);
+    }, 600);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [search]);
 
   const getAqiClass = (aqi: number) => {
     if (aqi <= 50) return { label: 'Good', color: '#10b981', bg: 'rgba(16, 185, 129, 0.1)' };
