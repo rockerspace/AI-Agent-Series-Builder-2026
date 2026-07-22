@@ -28,11 +28,11 @@ By unifying multi-persona agent coordination, live environmental tools, and nati
   3. **Urban Ecologist**: Evaluates local heat risk indices and air pollution profiles.
 * **Autonomous Utility Bill Auditor**: Upload a utility bill document (e.g. `.txt`) directly in the chat interface. The Gemini Carbon Auditor agent autonomously parses the text, extracts energy consumption (kWh), executes carbon offset calculations using MCP tools, and updates the database on-the-fly.
 * **Multilingual Eco-Voice Hub**: Speak to the Aura agent in any of the 11 major Indian languages (Hindi, Tamil, Telugu, Marathi, Kannada, etc.) using Sarvam AI's STT (`saaras:v3`) and receive vocalized responses translated via TTS (`bulbul:v3`).
-* **Live Environmental Telemetry**: Queries live APIs on-the-fly to pull real weather, climate risk anomalies, and air quality indices (US AQI, PM2.5, PM10) for any city globally via Open-Meteo geocoding.
+* **Live Environmental Telemetry (Open-Meteo & OSM Nominatim)**: Queries live APIs on-the-fly to pull real weather, climate risk anomalies, and air quality indices (US AQI, PM2.5, PM10) for any city, state, or country globally via a robust geocoding pipeline utilizing Open-Meteo with an automatic OpenStreetMap Nominatim fallback.
 * **Carbon Tracker Dashboard**: Input transport, utility, and dietary metrics using interactive sliders to compute your metric tons of CO2 footprint and see tree-planting offset recommendations alongside real-world equivalents (smartphone charges, economy flights).
 * **Integrated Green Marketplace Broker**: Turn conversational recommendations into direct commercial action. If a user's electricity footprint is high, the agent queries local solar vendors via MCP, provides an exact installation sizing and quote (accounting for PM Surya Ghar state subsidies in India or ITC credits in the US), and delivers a direct affiliate referral checkout link.
 * **Smart Home & IoT Telemetry**: Connects directly to smart devices (e.g., Google Nest thermostats). Users can check current temperatures and real-time power draw (kW) or adjust cooling targets directly. The ADK Agent can query status via `get_smart_device_status` and autonomously transition devices into energy-saving `ECO` modes via `adjust_smart_thermostat` during high-grid-intensity carbon cycles.
-* **Climate Pulse Geographical Profiler**: Look up localized environmental metrics (Decadal warming indices, Air Quality Indexes, renewable energy grid mixes) and country-specific Net-Zero policy targets.
+* **Climate Pulse Geographical Profiler**: Look up localized environmental metrics (Decadal warming indices, Air Quality Indexes, renewable energy grid mixes) and country-specific Net-Zero policy targets for any administrative boundary globally (including states and provinces).
 * **Interactive Climate Risk Geospatial Map**: Renders an interactive Leaflet-powered dark map layer dynamically. Overlays concentric heat buffers and AQI boundaries to visualize air pollution contours and decadal warming anomalies directly over the searched city.
 * **Agent-to-Agent Carbon Offset Bidding**: Features a simulated multi-agent Bidding Room. Your personal EcoPulse Buyer Agent autonomously requests proposals, reviews certification verification grades, and negotiates bulk pricing against Pachama (Reforestation), Gold Standard (Methane Capture), and CleanAir (Solar grid offsets) registries in real-time.
 * **Social Engagement**: Single-click copy badge to share Eco-Scores (A+ through F) directly to LinkedIn.
@@ -42,16 +42,16 @@ By unifying multi-persona agent coordination, live environmental tools, and nati
 
 ## 🛠 Architecture Overview
 
-The application utilizes a clean separation of concerns: a React/Vite client dashboard, a FastAPI backend running the Google ADK runner, and a custom Stdio-based Model Context Protocol (MCP) tool server.
+The application utilizes a clean separation of concerns: a React/Vite client dashboard (hosted on Vercel), a FastAPI backend running on Google Cloud Run, and a custom Stdio-based Model Context Protocol (MCP) tool server running the Google ADK runner.
 
 ```mermaid
 graph TD
-    User([User Browser]) -->|React Chat, Sliders & Mic UI| Frontend[React Vite Frontend]
-    Frontend -->|SSE / REST API| FastAPI[FastAPI Backend]
+    User([User Browser]) -->|React Chat, Sliders & Mic UI| Frontend[React Vite Frontend on Vercel]
+    Frontend -->|SSE / REST API| FastAPI[FastAPI Backend on Google Cloud Run]
     
     subgraph "Google AI Stack"
         FastAPI -->|Orchestrates| ADK[Google ADK Runner]
-        ADK -->|Gemini 2.5 Flash| Gemini[Google AI Studio]
+        ADK -->|Gemini Flash Latest| Gemini[Google AI Studio]
         ADK -->|Discovers & Calls Tools| MCP[Model Context Protocol Server]
     end
     
@@ -69,6 +69,7 @@ graph TD
     subgraph "External Telemetry APIs"
         get_climate_metrics -->|Geo/Weather API| OpenMeteo[Open-Meteo Geocoding & Climate API]
         get_climate_metrics -->|AQI API| OpenAQ[Open-Meteo Air Quality telemetry]
+        get_climate_metrics -->|Fallback Geocoder| OSM[OpenStreetMap Nominatim Geocoder]
     end
 ```
 
