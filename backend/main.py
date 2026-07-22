@@ -21,6 +21,11 @@ logger = logging.getLogger("EcoPulseBackend")
 # Verify GEMINI_API_KEY is present
 if not settings.gemini_api_key:
     logger.warning("GEMINI_API_KEY is missing from config settings! Agent operations will fail.")
+else:
+    os.environ["GEMINI_API_KEY"] = settings.gemini_api_key
+
+if settings.sarvam_api_key:
+    os.environ["SARVAM_API_KEY"] = settings.sarvam_api_key
 
 from agent import get_climate_agent
 from mcp_server import get_climate_metrics, calculate_carbon_footprint, search_climate_policies

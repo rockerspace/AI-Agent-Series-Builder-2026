@@ -6,8 +6,10 @@ from aiokafka import AIOKafkaProducer, AIOKafkaConsumer
 
 logger = logging.getLogger("EcoPulseKafka")
 
-KAFKA_BOOTSTRAP_SERVERS = os.environ.get("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
-TOPIC_NAME = "climate-events"
+from config import settings
+
+KAFKA_BOOTSTRAP_SERVERS = settings.kafka_bootstrap_servers
+TOPIC_NAME = settings.kafka_topic
 
 producer = None
 mock_queue = asyncio.Queue()

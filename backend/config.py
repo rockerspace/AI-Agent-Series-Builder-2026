@@ -5,7 +5,8 @@ class Settings(BaseSettings):
     gemini_api_key: Optional[str] = None
     sarvam_api_key: Optional[str] = None
     kafka_bootstrap_servers: str = "localhost:9092"
-    kafka_topic: str = "climate_events"
+    kafka_topic: str = "climate-events"
+    firebase_service_account_path: Optional[str] = None
     api_url: str = "http://127.0.0.1:8000"
     environment: str = "development"
     debug: bool = True

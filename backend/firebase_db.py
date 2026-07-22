@@ -7,9 +7,11 @@ logger = logging.getLogger("EcoPulseFirebase")
 
 db = None
 
+from config import settings
+
 # Initialize Firebase with dynamic fallback
 try:
-    cred_path = os.environ.get("FIREBASE_SERVICE_ACCOUNT_PATH")
+    cred_path = settings.firebase_service_account_path
     if cred_path and os.path.exists(cred_path):
         cred = credentials.Certificate(cred_path)
         firebase_admin.initialize_app(cred)
