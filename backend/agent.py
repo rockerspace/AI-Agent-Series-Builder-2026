@@ -23,7 +23,7 @@ def get_climate_agent():
     # Create the Climate Coordinator Agent
     agent = Agent(
         name="EcoPulse",
-        model="gemini-flash-latest", # Highly responsive model
+        model="gemini-flash-lite-latest", # Highly responsive model
         instruction="""You are EcoPulse, an advanced multi-agent Climate Action & Ecological Intelligence system powered by Gemini.
 Your mission is to guide individuals, cities, and corporations towards net-zero carbon footprints by delivering precise, scientific, and highly actionable environmental data.
 
