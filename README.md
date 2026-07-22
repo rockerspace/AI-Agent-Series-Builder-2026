@@ -230,7 +230,7 @@ AI-Agent-Series-Builder-2026/
 
 ## 🚀 CI/CD Pipeline (GitHub Actions)
 
-We have configured an automated CI/CD pipeline in `.github/workflows/ci-cd.yml` to ensure high release velocity and code quality:
+I have configured an automated CI/CD pipeline in `.github/workflows/ci-cd.yml` to ensure high release velocity and code quality:
 
 ### ⚙️ Pipeline Jobs:
 1. **Frontend Test Suite**: Installs dependencies (`npm ci`) and runs the Jest tests using Node.js v22.
