@@ -10,3 +10,4 @@ firebase-admin>=6.2.0
 reportlab>=5.0.0
 pydantic-settings>=2.0.0
 pytest>=8.0.0
+hvac>=2.1.0
