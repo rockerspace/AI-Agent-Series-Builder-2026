@@ -267,7 +267,7 @@ def get_solar_marketplace_quotes(location: str, monthly_kwh: float) -> dict:
         net_cost = max(10000, base_cost - subsidy)
         currency = "INR"
         vendor = "Tata Power Solar"
-        referral_link = f"https://solar.ecopulse.io/quote?vendor=tata&system={kw_size}kw&ref=ecopulse"
+        referral_link = f"https://www.tatapowersolar.com/?system={kw_size}kw&ref=ecopulse"
         saving_msg = f"Save up to \u20b9{int(kw_size * 120 * 8 * 12)} annually (assuming \u20b98/unit utility tariff)"
     else:
         base_cost = kw_size * 2800
@@ -275,7 +275,7 @@ def get_solar_marketplace_quotes(location: str, monthly_kwh: float) -> dict:
         net_cost = base_cost - subsidy
         currency = "USD"
         vendor = "Sunrun Solar"
-        referral_link = f"https://solar.ecopulse.io/quote?vendor=sunrun&system={kw_size}kw&ref=ecopulse"
+        referral_link = f"https://www.sunrun.com/?system={kw_size}kw&ref=ecopulse"
         saving_msg = f"Save up to ${int(kw_size * 120 * 0.16 * 12)} annually (assuming $0.16/kWh utility tariff)"
         
     return {
