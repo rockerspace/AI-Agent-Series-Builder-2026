@@ -213,8 +213,9 @@ AI-Agent-Series-Builder-2026/
 
 ## 🧪 Testing, Centralized Config, and Zustand State management
 
-### ⚙️ Centralized Settings & Error Handling
+### ⚙️ Centralized Settings & Secrets Management
 - **Pydantic BaseSettings**: All backend environmental variables (Gemini/Sarvam keys, Kafka servers, ports) are centralized in `config.py`.
+- **HashiCorp Vault Integration**: Supports loading API keys dynamically from a Vault KV secret engine in production using `hvac`, reducing the reliance on static `.env` files. Falls back to `.env` files for local development.
 - **Refined Exceptions**: Coordinates semantic error mapping in `mcp_server.py`. Distinguishes between:
   - `ValueError` (City not found -> maps to HTTP 404 in API).
   - `ConnectionError` (Geocoding network timeout -> maps to HTTP 503 Service Unavailable).
