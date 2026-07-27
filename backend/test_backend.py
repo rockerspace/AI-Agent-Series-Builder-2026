@@ -1,4 +1,7 @@
+import os
 from unittest.mock import MagicMock, patch
+
+os.environ["GEMINI_API_KEY"] = "mock_gemini_api_key_for_testing"
 
 from fastapi.testclient import TestClient
 
