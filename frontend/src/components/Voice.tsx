@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Mic, MicOff, Volume2, Globe, Loader, ShieldAlert, Cpu } from 'lucide-react';
+import { API_URL } from '../config';
 
 const LANGUAGES = [
   { code: 'hi-IN', name: 'Hindi', script: 'हिन्दी' },
@@ -149,7 +150,7 @@ const Voice: React.FC = () => {
     setProcessing(true);
     let transcriptText = "";
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+      const apiUrl = API_URL;
       const formData = new FormData();
       formData.append('audio', blob, 'recording.wav');
       
@@ -186,7 +187,7 @@ const Voice: React.FC = () => {
 
   const getAgentResponse = async (text: string) => {
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+      const apiUrl = API_URL;
       
       const response = await fetch(`${apiUrl}/api/chat`, {
         method: 'POST',
@@ -258,7 +259,7 @@ const Voice: React.FC = () => {
     }
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+      const apiUrl = API_URL;
       
       const ttsResponse = await fetch(`${apiUrl}/api/voice/tts`, {
         method: 'POST',

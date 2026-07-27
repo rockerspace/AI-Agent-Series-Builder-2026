@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Search, MapPin, Wind, AlertTriangle, ShieldCheck, Globe, Thermometer } from 'lucide-react';
+import { MapPin, Wind, AlertTriangle, ShieldCheck, Globe, Thermometer } from 'lucide-react';
+import { API_URL } from '../config';
+import { SearchBar } from './ui/SearchBar.tsx';
+import { PolicyResultCard } from './ui/PolicyResultCard.tsx';
 
 interface ClimateMetrics {
   location: string;
@@ -109,7 +112,7 @@ const Pulse: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+      const apiUrl = API_URL;
       const metricsRes = await fetch(`${apiUrl}/api/metrics?location=${encodeURIComponent(locationTerm)}`);
       
       if (metricsRes.ok) {
@@ -161,26 +164,12 @@ const Pulse: React.FC = () => {
   return (
     <div className="dashboard-scroll" style={{ padding: '24px', overflowY: 'auto', maxHeight: 'calc(100vh - 80px)' }}>
       {/* Top Search bar */}
-      <div className="search-box" style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
-        <input
-          type="text"
-          className="search-input"
-          style={{ flex: 1, padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border-glass)', background: 'var(--bg-glass)', color: 'var(--text-main)', fontSize: '14px' }}
-          placeholder="Search climate metrics by city or country (e.g., London, India, Tokyo, United States)..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-        />
-        <button 
-          className="btn-search" 
-          onClick={handleSearch} 
-          disabled={loading}
-          style={{ background: 'var(--primary-cyan)', color: '#000', border: 'none', padding: '12px 24px', borderRadius: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
-        >
-          <Search size={18} />
-          Search
-        </button>
-      </div>
+      <SearchBar
+        value={search}
+        loading={loading}
+        onChange={setSearch}
+        onSearch={handleSearch}
+      />
 
       {error && (
         <div className="glass-card" style={{ borderLeft: '4px solid #ef4444', marginBottom: '24px', padding: '16px', borderRadius: '12px', background: 'rgba(239, 68, 68, 0.05)' }}>
@@ -330,41 +319,13 @@ const Pulse: React.FC = () => {
 
             {/* Right Column: Policies & Net-Zero Target */}
             {policy && (
-              <div className="glass-card" style={{ height: 'fit-content', padding: '24px', borderRadius: '16px', border: '1px solid var(--border-glass)', background: 'var(--bg-glass)' }}>
-                <h3 style={{ fontSize: '18px', fontWeight: 600, borderBottom: '1px solid var(--border-glass)', paddingBottom: '12px', marginBottom: '16px' }}>
-                  Country Climate Targets
-                </h3>
-
-                <div style={{ marginBottom: '20px' }}>
-                  <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Net Zero Commitment Year</div>
-                  <div style={{ fontSize: '32px', fontWeight: 700, color: 'var(--primary-cyan)' }}>
-                    {policy.net_zero_target_year}
-                  </div>
-                </div>
-
-                <div style={{ marginBottom: '20px' }}>
-                  <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Grid Emission Intensity</div>
-                  <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-main)' }}>
-                    {policy.grid_carbon_intensity}
-                  </div>
-                </div>
-
-                <div style={{ marginBottom: '20px' }}>
-                  <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '8px' }}>Active Regulatory Policies</div>
-                  <ul style={{ marginLeft: '16px', fontSize: '13px', color: 'var(--text-main)', paddingLeft: '8px' }}>
-                    {policy.core_policies.map((p, idx) => (
-                      <li key={idx} style={{ marginBottom: '6px' }}>{p}</li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div style={{ borderTop: '1px solid var(--border-glass)', paddingTop: '16px' }}>
-                  <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '6px' }}>Available Consumer Subsidies</div>
-                  <p style={{ fontSize: '13px', color: 'var(--primary-cyan)', fontWeight: 500, margin: 0 }}>
-                    {policy.active_incentives}
-                  </p>
-                </div>
-              </div>
+              <PolicyResultCard
+                country={policy.country || metrics.country}
+                netZeroYear={policy.net_zero_target_year}
+                carbonIntensity={policy.grid_carbon_intensity}
+                policies={policy.core_policies}
+                incentives={policy.active_incentives}
+              />
             )}
           </div>
         )

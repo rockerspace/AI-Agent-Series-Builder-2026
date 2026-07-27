@@ -1,16 +1,16 @@
 import os
 import json
 import logging
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, HTTPException, UploadFile, File, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
-from dotenv import load_dotenv
+from pydantic import BaseModel, Field, field_validator
+import re
 
 class TTSRequest(BaseModel):
-    text: str
-    language_code: str = "hi-IN"
-    model: str = "bulbul:v3"
+    text: str = Field(..., min_length=1, max_length=1000)
+    language_code: str = Field("hi-IN", pattern="^(hi-IN|ta-IN|te-IN|bn-IN|kn-IN|ml-IN|en-US)$")
+    model: str = Field("bulbul:v3", pattern="^(bulbul:v3|saaras:v3)$")
 
 from config import settings
 
@@ -95,9 +95,17 @@ except Exception as e:
     agent_runner = None
 
 class ChatRequest(BaseModel):
-    message: str
-    session_id: str = "default_session"
-    user_id: str = "default_user"
+    message: str = Field(..., min_length=1, max_length=5000)
+    session_id: str = Field("default_session", min_length=1, max_length=100, pattern="^[a-zA-Z0-9_\\-]+$")
+    user_id: str = Field("default_user", min_length=1, max_length=100, pattern="^[a-zA-Z0-9_\\-]+$")
+
+    @field_validator("message")
+    @classmethod
+    def sanitize_message(cls, v: str) -> str:
+        sanitized = re.sub(r'<[^>]*>', '', v)
+        if not sanitized.strip():
+            raise ValueError("Message cannot be empty or solely whitespace.")
+        return sanitized
 
 @app.post("/api/chat")
 async def chat_endpoint(request: ChatRequest):
@@ -213,7 +221,14 @@ async def upload_bill_endpoint(
 
 # Direct data endpoints for dashboard widgets (bypassing conversational wrapper if needed)
 @app.get("/api/metrics")
-async def metrics_endpoint(location: str = "Bengaluru"):
+async def metrics_endpoint(
+    location: str = Query(
+        "Bengaluru",
+        min_length=2,
+        max_length=100,
+        pattern="^[a-zA-Z\\s,\\-\\.]+$"
+    )
+):
     try:
         res = get_climate_metrics(location)
         save_search_event(location, res)
@@ -230,7 +245,11 @@ async def metrics_endpoint(location: str = "Bengaluru"):
         raise EcoPulseException(str(e))
 
 @app.get("/api/calculate")
-async def calculate_endpoint(transport_km: float = 0, electricity_kwh: float = 0, meals: int = 0):
+async def calculate_endpoint(
+    transport_km: float = Query(0.0, ge=0.0, le=100000.0),
+    electricity_kwh: float = Query(0.0, ge=0.0, le=100000.0),
+    meals: int = Query(0, ge=0, le=10000)
+):
     try:
         res = calculate_carbon_footprint(transport_km, electricity_kwh, meals)
         inputs = {"transport_km": transport_km, "electricity_kwh": electricity_kwh, "meals": meals}

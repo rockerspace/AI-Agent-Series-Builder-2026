@@ -93,13 +93,12 @@ def test_custom_exception_structure():
     assert data["error"]["status"] == 404
 
 def test_calculate_negative_and_zero_values():
-    # Asserting how negative or zero parameters are handled
+    # Asserting that negative parameters are rejected with a 422 validation error
     response = client.get("/api/calculate?transport_km=-10&electricity_kwh=-20&meals=-5")
-    # For now, it will compute with negative values or fail. Once strict validation is on, it will fail.
-    # Let's ensure standard behavior handles it (either validation triggers, or values default).
-    # Since we want to enforce Pydantic constraints, we will check if it rejects them or allows them before the validation update.
-    # We will assert a 422 Unprocessable Entity status code when negative validation is implemented.
-    pass
+    assert response.status_code == 422
+    # Verify zero values are allowed as valid minimum values
+    response_zero = client.get("/api/calculate?transport_km=0&electricity_kwh=0&meals=0")
+    assert response_zero.status_code == 200
 
 @patch("main.agent_runner")
 def test_chat_sse_streaming(mock_runner):

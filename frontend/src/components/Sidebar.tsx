@@ -1,5 +1,6 @@
 import React from 'react';
 import { MessageSquare, Calculator, Globe, Shield, Mic, RefreshCw } from 'lucide-react';
+import { NavItem } from './ui/NavItem.tsx';
 
 interface SidebarProps {
   activeTab: string;
@@ -30,14 +31,13 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
         {menuItems.map((item) => {
           const Icon = item.icon;
           return (
-            <div
+            <NavItem
               key={item.id}
-              className={`nav-item ${activeTab === item.id ? 'active' : ''}`}
+              label={item.label}
+              active={activeTab === item.id}
+              icon={<Icon size={20} />}
               onClick={() => setActiveTab(item.id)}
-            >
-              <Icon size={20} />
-              <span>{item.label}</span>
-            </div>
+            />
           );
         })}
       </nav>

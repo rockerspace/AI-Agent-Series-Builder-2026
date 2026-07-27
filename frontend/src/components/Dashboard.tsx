@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Leaf, Info, Share2, Award, Zap, Plane, Smartphone } from 'lucide-react';
 import { useStore } from '../store/useStore.ts';
 import { CarbonSliderCard } from './CarbonSliderCard.tsx';
+import { API_URL } from '../config';
 
 interface CalculationResult {
   monthly_summary: {
@@ -54,7 +55,7 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     const fetchIotStatus = async () => {
       try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+        const apiUrl = API_URL;
         const response = await fetch(`${apiUrl}/api/iot/status`);
         if (response.ok) {
           const data = await response.json();
@@ -70,7 +71,7 @@ const Dashboard: React.FC = () => {
   const handleThermostatChange = async (temp: number) => {
     if (!iotDevice) return;
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+      const apiUrl = API_URL;
       const response = await fetch(`${apiUrl}/api/iot/control`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -93,7 +94,7 @@ const Dashboard: React.FC = () => {
         return;
       }
       try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+        const apiUrl = API_URL;
         const response = await fetch(`${apiUrl}/api/marketplace/solar?location=Mumbai&monthly_kwh=${electricity}`);
         if (response.ok) {
           const data = await response.json();
@@ -108,7 +109,7 @@ const Dashboard: React.FC = () => {
 
   // Connect to Kafka SSE Stream
   useEffect(() => {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+    const apiUrl = API_URL;
     const eventSource = new EventSource(`${apiUrl}/api/stream/feed`);
 
     eventSource.onmessage = (event) => {
@@ -149,7 +150,7 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     const fetchCalculation = async () => {
       try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+        const apiUrl = API_URL;
         const response = await fetch(
           `${apiUrl}/api/calculate?transport_km=${transport}&electricity_kwh=${electricity}&meals=${meals}`
         );

@@ -1,5 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Sparkles, Terminal, ThumbsUp, ThumbsDown, Copy, Check, Paperclip } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, Copy, Check } from 'lucide-react';
+import { API_URL } from '../config';
+import { MessageBubble } from './ui/MessageBubble.tsx';
+import { ToolCallChip } from './ui/ToolCallChip.tsx';
+import { ChatInput } from './ui/ChatInput.tsx';
 
 interface Message {
   sender: 'user' | 'agent';
@@ -193,7 +197,7 @@ const Chat: React.FC = () => {
   const [slowResponse, setSlowResponse] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -203,11 +207,8 @@ const Chat: React.FC = () => {
     scrollToBottom();
   }, [messages, toolCall]);
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const handleFileUpload = async (file: File) => {
     if (!file || loading) return;
-
-    if (fileInputRef.current) fileInputRef.current.value = '';
 
     setShowChips(false);
     setMessages(prev => [...prev, { sender: 'user', text: `📁 Uploaded Utility Bill: **${file.name}**` }]);
@@ -219,7 +220,7 @@ const Chat: React.FC = () => {
     const slowTimer = setTimeout(() => setSlowResponse(true), 10000);
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+      const apiUrl = API_URL;
       const formData = new FormData();
       formData.append('file', file);
 
@@ -304,7 +305,7 @@ const Chat: React.FC = () => {
     const slowTimer = setTimeout(() => setSlowResponse(true), 10000);
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+      const apiUrl = API_URL;
       const response = await fetch(`${apiUrl}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -385,32 +386,25 @@ const Chat: React.FC = () => {
     <div className="chat-container">
       <div className="messages-list">
         {messages.map((msg, index) => (
-          <div key={index} className={`message-wrapper ${msg.sender}`}>
-            {msg.sender === 'agent' && (
-              <div className="agent-avatar">
-                <Sparkles size={14} />
+          <MessageBubble key={index} sender={msg.sender}>
+            {msg.sender === 'agent' ? (
+              msg.text
+                ? renderMarkdown(msg.text)
+                : <TypingIndicator />
+            ) : (
+              msg.text
+            )}
+
+            {/* Suggestion chips only after first agent message */}
+            {msg.sender === 'agent' && index === 0 && showChips && (
+              <div className="suggestion-chips">
+                {SUGGESTION_CHIPS.map((chip, i) => (
+                  <button key={i} className="chip" onClick={() => sendMessage(chip)}>
+                    {chip}
+                  </button>
+                ))}
               </div>
             )}
-            <div className={`message-bubble ${msg.sender}`}>
-              {msg.sender === 'agent' ? (
-                msg.text
-                  ? renderMarkdown(msg.text)
-                  : <TypingIndicator />
-              ) : (
-                msg.text
-              )}
-
-              {/* Suggestion chips only after first agent message */}
-              {msg.sender === 'agent' && index === 0 && showChips && (
-                <div className="suggestion-chips">
-                  {SUGGESTION_CHIPS.map((chip, i) => (
-                    <button key={i} className="chip" onClick={() => sendMessage(chip)}>
-                      {chip}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
 
             {/* Message actions for agent messages with content */}
             {msg.sender === 'agent' && msg.text && index !== 0 && (
@@ -420,15 +414,10 @@ const Chat: React.FC = () => {
                 onFeedback={(val) => handleFeedback(index, val)}
               />
             )}
-          </div>
+          </MessageBubble>
         ))}
 
-        {toolCall && (
-          <div className="tool-chip">
-            <Terminal size={14} />
-            <span>{toolCall}</span>
-          </div>
-        )}
+        {toolCall && <ToolCallChip toolName={toolCall} />}
         {slowResponse && loading && (
           <div className="wake-up-banner">
             ⏳ The backend is waking up from sleep (Render free tier).
@@ -438,46 +427,13 @@ const Chat: React.FC = () => {
         <div ref={messagesEndRef} />
       </div>
 
-      <form onSubmit={handleSubmit} className="chat-input-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <input 
-          type="file" 
-          ref={fileInputRef} 
-          onChange={handleFileUpload} 
-          accept=".txt,.json,.csv,.pdf" 
-          style={{ display: 'none' }} 
-        />
-        <button 
-          type="button" 
-          className="chat-upload-btn" 
-          onClick={() => fileInputRef.current?.click()} 
-          disabled={loading}
-          title="Upload Utility Bill"
-          style={{
-            background: 'none',
-            border: 'none',
-            color: 'var(--text-muted)',
-            cursor: 'pointer',
-            padding: '8px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            transition: 'color 0.15s'
-          }}
-        >
-          <Paperclip size={18} />
-        </button>
-        <input
-          type="text"
-          className="chat-input"
-          placeholder="Ask EcoPulse, or upload a utility bill file to parse footprint..."
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          disabled={loading}
-        />
-        <button type="submit" className="chat-send-btn" disabled={loading || !input.trim()}>
-          <Send size={18} fill={loading || !input.trim() ? 'transparent' : '#070a13'} />
-        </button>
-      </form>
+      <ChatInput
+        value={input}
+        disabled={loading}
+        onChange={setInput}
+        onSubmit={handleSubmit}
+        onFileUpload={handleFileUpload}
+      />
     </div>
   );
 };
