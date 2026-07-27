@@ -224,8 +224,16 @@ AI-Agent-Series-Builder-2026/
 - Centralizes active tab navigation, live warning beacons, Nest IoT status, and the event logging feed in `frontend/src/store/useStore.ts` for clean, modular React rendering.
 
 ### 🧪 Automated Testing Suites
-- **Backend (Pytest)**: Offline, deterministic API testing with MagicMock mocks. Run `./venv/bin/pytest test_backend.py`.
-- **Frontend (Jest)**: Testing Zustand store transitions and active UI state actions. Run `npm run test` inside the `frontend/` directory.
+- **Backend (Pytest)**: Offline, deterministic API testing with MagicMock mocks. To run:
+  ```bash
+  cd backend
+  ./venv/bin/pytest test_backend.py
+  ```
+- **Frontend (Jest)**: Testing Zustand store transitions, React hooks, and the atomic `CarbonSliderCard` component. To run:
+  ```bash
+  cd frontend
+  npm run test
+  ```
 
 ---
 
