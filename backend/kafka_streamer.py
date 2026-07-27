@@ -1,8 +1,8 @@
-import os
-import json
 import asyncio
+import json
 import logging
-from aiokafka import AIOKafkaProducer, AIOKafkaConsumer
+
+from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
 
 logger = logging.getLogger("EcoPulseKafka")
 

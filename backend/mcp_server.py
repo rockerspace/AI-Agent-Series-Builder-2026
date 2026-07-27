@@ -1,7 +1,8 @@
+import math
 import os
 import random
+
 import requests
-import math
 from fastmcp import FastMCP
 
 # Initialize FastMCP Server
@@ -89,7 +90,7 @@ def get_city_coordinates(city: str):
             
             raise ValueError(f"Location '{city}' not found in global databases.")
     except requests.exceptions.RequestException as e:
-        raise ConnectionError(f"Geocoding API connection error: {str(e)}")
+        raise ConnectionError(f"Geocoding API connection error: {e!s}")
 
 @mcp.tool()
 def get_climate_metrics(location: str) -> dict:
@@ -147,7 +148,7 @@ def get_climate_metrics(location: str) -> dict:
         "coordinates": {"lat": lat, "lon": lon},
         "status": "Live Telemetry Loaded",
         "temperature": temp,
-        "temperature_anomaly": f"+1.6°C (last decade avg)",
+        "temperature_anomaly": "+1.6°C (last decade avg)",
         "extreme_weather_risk_index": weather_risk,
         "air_quality_index": aqi,
         "pm2_5": pm2_5,
@@ -367,7 +368,6 @@ def generate_subsidy_form(location: str, monthly_kwh: float, applicant_name: str
         monthly_kwh (float): Average monthly power usage in kWh.
         applicant_name (str): Name of the subsidy applicant.
     """
-    import os
     from reportlab.lib.pagesizes import letter
     from reportlab.pdfgen import canvas
     
@@ -425,7 +425,7 @@ def generate_subsidy_form(location: str, monthly_kwh: float, applicant_name: str
             "allocated_subsidy": subsidy_amount
         }
     except Exception as e:
-        return {"error": f"Failed to generate PDF: {str(e)}"}
+        return {"error": f"Failed to generate PDF: {e!s}"}
 
 @mcp.tool()
 def register_green_impact_onchain(user_id: str, impact_type: str, metric_value: float) -> dict:
@@ -444,7 +444,7 @@ def register_green_impact_onchain(user_id: str, impact_type: str, metric_value: 
     block_number = random.randint(19283741, 19283999)
     gas_used = random.randint(21000, 65000)
     
-    hash_input = f"{user_id}-{impact_type}-{metric_value}-{tx_timestamp}".encode('utf-8')
+    hash_input = f"{user_id}-{impact_type}-{metric_value}-{tx_timestamp}".encode()
     tx_hash = "0x" + hashlib.sha256(hash_input).hexdigest()
     
     return {

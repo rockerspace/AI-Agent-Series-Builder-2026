@@ -1,11 +1,13 @@
-import os
 import json
 import logging
-from fastapi import FastAPI, HTTPException, UploadFile, File, Query
+import os
+import re
+
+from fastapi import FastAPI, File, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field, field_validator
-import re
+
 
 class TTSRequest(BaseModel):
     text: str = Field(..., min_length=1, max_length=1000)
@@ -32,18 +34,25 @@ os.environ["NO_GCE_CHECK"] = "true"
 os.environ.pop("GOOGLE_APPLICATION_CREDENTIALS", None)
 
 from agent import get_climate_agent
-from mcp_server import get_climate_metrics, calculate_carbon_footprint, search_climate_policies
-from firebase_db import save_search_event, save_carbon_event
-from kafka_streamer import init_kafka_producer, stop_kafka_producer, send_kafka_event, event_generator
 from exceptions import (
-    register_exception_handlers,
-    EcoPulseException,
     AgentNotInitializedException,
-    LocationNotFoundException,
-    GeocodingServiceException,
+    EcoPulseException,
     FileProcessingException,
-    ExternalServiceException,
-    InvalidDeviceActionException
+    GeocodingServiceException,
+    LocationNotFoundException,
+    register_exception_handlers,
+)
+from firebase_db import save_carbon_event, save_search_event
+from kafka_streamer import (
+    event_generator,
+    init_kafka_producer,
+    send_kafka_event,
+    stop_kafka_producer,
+)
+from mcp_server import (
+    calculate_carbon_footprint,
+    get_climate_metrics,
+    search_climate_policies,
 )
 
 app = FastAPI(title="EcoPulse Climate Intelligence Agent API")
@@ -235,13 +244,13 @@ async def metrics_endpoint(
         await send_kafka_event("search", {"location": location, "metrics": res})
         return res
     except ValueError as e:
-        logger.warning(f"City not found: {str(e)}")
+        logger.warning(f"City not found: {e!s}")
         raise LocationNotFoundException(location)
     except ConnectionError as e:
-        logger.error(f"Geocoding API network error: {str(e)}")
+        logger.error(f"Geocoding API network error: {e!s}")
         raise GeocodingServiceException(str(e))
     except Exception as e:
-        logger.error(f"Unexpected error in metrics: {str(e)}")
+        logger.error(f"Unexpected error in metrics: {e!s}")
         raise EcoPulseException(str(e))
 
 @app.get("/api/calculate")
@@ -304,6 +313,7 @@ async def iot_control_endpoint(request: IoTControlRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 from fastapi.responses import FileResponse
+
 
 class SubsidyFormRequest(BaseModel):
     location: str

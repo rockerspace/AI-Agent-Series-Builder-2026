@@ -1,9 +1,11 @@
 import os
 import sys
+
+from google.adk import Agent, Runner
+from google.adk.sessions import InMemorySessionService
 from google.adk.tools.mcp_tool import McpToolset
 from mcp import StdioServerParameters
-from google.adk.sessions import InMemorySessionService
-from google.adk import Agent, Runner
+
 
 def get_climate_agent():
     # Detect the path of python in the virtual environment to ensure it has fastmcp installed

@@ -1,20 +1,20 @@
-import os
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing import Optional
+
 
 class Settings(BaseSettings):
-    gemini_api_key: Optional[str] = None
-    sarvam_api_key: Optional[str] = None
+    gemini_api_key: str | None = None
+    sarvam_api_key: str | None = None
     kafka_bootstrap_servers: str = "localhost:9092"
     kafka_topic: str = "climate-events"
-    firebase_service_account_path: Optional[str] = None
+    firebase_service_account_path: str | None = None
     api_url: str = "http://127.0.0.1:8000"
     environment: str = "development"
     debug: bool = True
     
     # HashiCorp Vault credentials (optional, used in production builds)
-    vault_addr: Optional[str] = None
-    vault_token: Optional[str] = None
+    vault_addr: str | None = None
+    vault_token: str | None = None
     vault_secret_path: str = "secret/data/ecopulse"
     
     model_config = SettingsConfigDict(
