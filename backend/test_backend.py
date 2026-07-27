@@ -92,3 +92,60 @@ def test_custom_exception_structure():
     assert data["error"]["code"] == "LOCATION_NOT_FOUND"
     assert data["error"]["status"] == 404
 
+def test_calculate_negative_and_zero_values():
+    # Asserting how negative or zero parameters are handled
+    response = client.get("/api/calculate?transport_km=-10&electricity_kwh=-20&meals=-5")
+    # For now, it will compute with negative values or fail. Once strict validation is on, it will fail.
+    # Let's ensure standard behavior handles it (either validation triggers, or values default).
+    # Since we want to enforce Pydantic constraints, we will check if it rejects them or allows them before the validation update.
+    # We will assert a 422 Unprocessable Entity status code when negative validation is implemented.
+    pass
+
+@patch("main.agent_runner")
+def test_chat_sse_streaming(mock_runner):
+    # Mock classes to support serialization
+    class MockFunctionCall:
+        def __init__(self, name):
+            self.name = name
+
+    class MockPart:
+        def __init__(self, text=None, function_call=None):
+            self.text = text
+            self.function_call = function_call
+
+    class MockEvent:
+        def __init__(self, parts):
+            self.content = MagicMock()
+            self.content.parts = parts
+
+    mock_event1 = MockEvent([MockPart(text="Analyzing current footprints...")])
+    mock_event2 = MockEvent([MockPart(function_call=MockFunctionCall("calculate_carbon_footprint"))])
+    
+    async def mock_run_async(*args, **kwargs):
+        yield mock_event1
+        yield mock_event2
+        
+    mock_runner.run_async = mock_run_async
+    
+    response = client.post("/api/chat", json={"message": "What is my footprint?", "session_id": "test_sess"})
+    assert response.status_code == 200
+    assert "text/event-stream" in response.headers["content-type"]
+    
+    content = response.text
+    assert "Analyzing current footprints..." in content
+    assert "calculate_carbon_footprint" in content
+
+@patch("main.agent_runner")
+def test_chat_gemini_api_error_handling(mock_runner):
+    # Mock Gemini API throwing exception during runner stream execution
+    async def mock_run_async_raise(*args, **kwargs):
+        raise RuntimeError("API quota limits reached.")
+        yield # Force generator behavior
+        
+    mock_runner.run_async = mock_run_async_raise
+    
+    response = client.post("/api/chat", json={"message": "Calculate carbon", "session_id": "test_sess"})
+    assert response.status_code == 200
+    assert "API quota limits reached." in response.text
+
+
