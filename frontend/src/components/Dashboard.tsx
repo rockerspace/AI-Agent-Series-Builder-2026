@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Leaf, Info, Share2, Award, Zap, Plane, Smartphone } from 'lucide-react';
 import { useStore } from '../store/useStore.ts';
+import { CarbonSliderCard } from './CarbonSliderCard.tsx';
 
 interface CalculationResult {
   monthly_summary: {
@@ -243,58 +244,40 @@ const Dashboard: React.FC = () => {
             </h2>
             
             {/* Transport Slider */}
-            <div className="form-group" style={{ marginTop: '20px' }}>
-              <div className="slider-val" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>
-                <label>Transport Distance (Vehicle)</label>
-                <span style={{ color: 'var(--primary-cyan)' }}>{transport} km/mo</span>
-              </div>
-              <input 
-                type="range" 
-                min="0" 
-                max="3000" 
-                step="50" 
-                value={transport} 
-                onChange={(e) => setTransport(Number(e.target.value))} 
-                style={{ width: '100%', accentColor: 'var(--primary-cyan)' }}
-              />
-              <span style={{ fontSize: '11px', color: 'var(--text-dim)', display: 'block', marginTop: '4px' }}>Estimate includes average petrol/diesel combustion footprint.</span>
-            </div>
+            <CarbonSliderCard
+              label="Transport Distance (Vehicle)"
+              value={transport}
+              min={0}
+              max={3000}
+              step={50}
+              unit="km/mo"
+              description="Estimate includes average petrol/diesel combustion footprint."
+              onChange={setTransport}
+            />
 
             {/* Utility Slider */}
-            <div className="form-group" style={{ marginTop: '20px' }}>
-              <div className="slider-val" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>
-                <label>Grid Electricity</label>
-                <span style={{ color: 'var(--primary-cyan)' }}>{electricity} kWh/mo</span>
-              </div>
-              <input 
-                type="range" 
-                min="0" 
-                max="1000" 
-                step="10" 
-                value={electricity} 
-                onChange={(e) => setElectricity(Number(e.target.value))} 
-                style={{ width: '100%', accentColor: 'var(--primary-cyan)' }}
-              />
-              <span style={{ fontSize: '11px', color: 'var(--text-dim)', display: 'block', marginTop: '4px' }}>Based on household electricity usage and average grid carbon index.</span>
-            </div>
+            <CarbonSliderCard
+              label="Grid Electricity"
+              value={electricity}
+              min={0}
+              max={1000}
+              step={10}
+              unit="kWh/mo"
+              description="Based on household electricity usage and average grid carbon index."
+              onChange={setElectricity}
+            />
 
             {/* Diet Slider */}
-            <div className="form-group" style={{ marginTop: '20px' }}>
-              <div className="slider-val" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>
-                <label>Diet (Meat meals)</label>
-                <span style={{ color: 'var(--primary-cyan)' }}>{meals} meals/mo</span>
-              </div>
-              <input 
-                type="range" 
-                min="0" 
-                max="90" 
-                step="1" 
-                value={meals} 
-                onChange={(e) => setMeals(Number(e.target.value))} 
-                style={{ width: '100%', accentColor: 'var(--primary-cyan)' }}
-              />
-              <span style={{ fontSize: '11px', color: 'var(--text-dim)', display: 'block', marginTop: '4px' }}>Meat products (especially beef) carry heavy livestock emission factors.</span>
-            </div>
+            <CarbonSliderCard
+              label="Diet (Meat meals)"
+              value={meals}
+              min={0}
+              max={90}
+              step={1}
+              unit="meals/mo"
+              description="Meat products (especially beef) carry heavy livestock emission factors."
+              onChange={setMeals}
+            />
           </div>
 
           {/* IoT Smart Home Telemetry Card */}

@@ -68,3 +68,27 @@ def test_iot_status():
     data = response.json()
     assert "device_name" in data
     assert "power_draw_kw" in data
+
+def test_policies():
+    response = client.get("/api/policies?country=India")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["country"] == "India"
+    assert "net_zero_target_year" in data
+    assert "core_policies" in data
+
+def test_iot_control_success():
+    response = client.post("/api/iot/control", json={"device_id": "nest-thermostat-1", "target_temp": 24.5})
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "success"
+    assert data["device"]["target_temperature_c"] == 24.5
+
+def test_custom_exception_structure():
+    response = client.get("/api/metrics?location=NonExistentCity")
+    assert response.status_code == 404
+    data = response.json()
+    assert "error" in data
+    assert data["error"]["code"] == "LOCATION_NOT_FOUND"
+    assert data["error"]["status"] == 404
+

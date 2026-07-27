@@ -35,8 +35,19 @@ from agent import get_climate_agent
 from mcp_server import get_climate_metrics, calculate_carbon_footprint, search_climate_policies
 from firebase_db import save_search_event, save_carbon_event
 from kafka_streamer import init_kafka_producer, stop_kafka_producer, send_kafka_event, event_generator
+from exceptions import (
+    register_exception_handlers,
+    EcoPulseException,
+    AgentNotInitializedException,
+    LocationNotFoundException,
+    GeocodingServiceException,
+    FileProcessingException,
+    ExternalServiceException,
+    InvalidDeviceActionException
+)
 
 app = FastAPI(title="EcoPulse Climate Intelligence Agent API")
+register_exception_handlers(app)
 
 @app.on_event("startup")
 async def startup_event():
@@ -91,7 +102,7 @@ class ChatRequest(BaseModel):
 @app.post("/api/chat")
 async def chat_endpoint(request: ChatRequest):
     if not agent_runner:
-        raise HTTPException(status_code=500, detail="Agent is not initialized. Check server logs.")
+        raise AgentNotInitializedException()
     
     # Verify API key
     if not os.environ.get("GEMINI_API_KEY"):
@@ -149,13 +160,13 @@ async def upload_bill_endpoint(
     user_id: str = "default_user"
 ):
     if not agent_runner:
-        raise HTTPException(status_code=500, detail="Agent is not initialized. Check server logs.")
+        raise AgentNotInitializedException()
     
     try:
         content = await file.read()
         bill_text = content.decode("utf-8", errors="ignore")
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Failed to read file: {str(e)}")
+        raise FileProcessingException(str(e))
 
     prompt_message = f"Please analyze this utility bill document text, extract the electricity/gas usage, and autonomously calculate the carbon footprint using your tool. Here is the parsed bill text:\n\n{bill_text}"
 
@@ -210,13 +221,13 @@ async def metrics_endpoint(location: str = "Bengaluru"):
         return res
     except ValueError as e:
         logger.warning(f"City not found: {str(e)}")
-        raise HTTPException(status_code=404, detail=str(e))
+        raise LocationNotFoundException(location)
     except ConnectionError as e:
         logger.error(f"Geocoding API network error: {str(e)}")
-        raise HTTPException(status_code=503, detail=str(e))
+        raise GeocodingServiceException(str(e))
     except Exception as e:
         logger.error(f"Unexpected error in metrics: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise EcoPulseException(str(e))
 
 @app.get("/api/calculate")
 async def calculate_endpoint(transport_km: float = 0, electricity_kwh: float = 0, meals: int = 0):
