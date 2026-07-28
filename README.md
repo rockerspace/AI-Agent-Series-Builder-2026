@@ -223,17 +223,34 @@ AI-Agent-Series-Builder-2026/
 ### 📦 Zustand State Store
 - Centralizes active tab navigation, live warning beacons, Nest IoT status, and the event logging feed in `frontend/src/store/useStore.ts` for clean, modular React rendering.
 
-### 🧪 Automated Testing Suites
-- **Backend (Pytest)**: Offline, deterministic API testing with MagicMock mocks. To run:
+### 🧪 Automated Testing Suites (100% Offline & Deterministic)
+- **Backend Test Suite (Pytest)**: Includes **39 comprehensive unit & integration tests** covering all 16 API endpoints, 6 MCP tools, 5 custom exception handlers, Pydantic validation edge cases, and Firebase/Kafka side-effect mocks. To run:
   ```bash
   cd backend
-  ./venv/bin/pytest test_backend.py
+  ./venv/bin/pytest test_backend.py -v
   ```
-- **Frontend (Jest)**: Testing Zustand store transitions, React hooks, and the atomic `CarbonSliderCard` component. To run:
+- **Frontend Test Suite (Jest & React Testing Library)**: Includes **42 tests across 9 test suites** testing component rendering, AQI/risk boundary functions, Zustand store transitions, SSE chat streaming, and UI atomic components. To run:
   ```bash
   cd frontend
   npm run test
   ```
+
+---
+
+## 🚀 Enterprise Startup Transformation Strategy
+
+EcoPulse is designed to scale into an **Enterprise ClimateTech SaaS Operating System** ("EcoPulse Enterprise OS"):
+
+### 1. 🏢 Enterprise Decarbonization Hub (Scope 1, 2 & 3)
+- **Scope 1**: Direct IoT facility and HVAC emissions tracking.
+- **Scope 2**: Real-time grid power carbon intensity and solar array load balancing.
+- **Scope 3**: Automated corporate supply chain emissions & business travel auditing.
+
+### 2. ⚡ Autonomous Carbon Credit Exchange
+- Real-time agentic bidding engine negotiating verified carbon credits (Reforestation, Direct Air Capture, Solar Grid) with double-counting prevention on Polygon L2.
+
+### 3. 📄 Automated ESG & Climate Disclosure Reporting
+- One-click PDF audit generation compliant with **EU CSRD**, **US SEC Climate Rules**, and CDP disclosure standards.
 
 ---
 
