@@ -156,8 +156,15 @@ def test_chat_gemini_api_error_handling(mock_runner):
 
 # --- NEW TESTS APPENDED ---
 
-from mcp_server import get_solar_marketplace_quotes, adjust_smart_thermostat, calculate_carbon_footprint, search_climate_policies, SMART_HOME_DEVICES
-from exceptions import AgentNotInitializedException, LocationNotFoundException, GeocodingServiceException, FileProcessingException, InvalidDeviceActionException
+from exceptions import InvalidDeviceActionException
+from mcp_server import (
+    SMART_HOME_DEVICES,
+    adjust_smart_thermostat,
+    calculate_carbon_footprint,
+    get_solar_marketplace_quotes,
+    search_climate_policies,
+)
+
 
 # 1. Untested Route Coverage (~8 tests)
 def test_health_endpoint():
