@@ -140,37 +140,23 @@ npm run dev
 
 ## ☁️ Deploying Backend to Google Cloud Run
 
-Instead of Render, you can deploy the EcoPulse backend to **Google Cloud Run** — Google's fully managed serverless container platform.
+EcoPulse uses **Google Cloud Run** as its production backend platform — a fully managed, auto-scaling serverless container service with zero cold-start penalty.
 
-### Step 1: Create a `Dockerfile` in `backend/`
-```dockerfile
-FROM python:3.10-slim
-
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-COPY . .
-
-EXPOSE 8080
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
-```
-
-### Step 2: Deploy using Google Cloud SDK
+### Step 1: Build & Deploy with Cloud SDK
 1. Authenticate with Google Cloud:
    ```bash
    gcloud auth login
-   gcloud config set project vemarai
+   gcloud config set project YOUR_GCP_PROJECT_ID
    ```
-2. Build and Deploy to Cloud Run:
+2. Build and deploy directly from source:
    ```bash
    gcloud run deploy ecopulse-backend \
-     --source . \
+     --source ./backend \
      --region us-central1 \
      --allow-unauthenticated \
      --set-env-vars="GEMINI_API_KEY=your_key,SARVAM_API_KEY=your_key"
    ```
-Once completed, Google Cloud Run will provide a secure HTTPS endpoint (e.g. `https://ecopulse-backend-xxxxx.run.app`) to replace the Render link!
+Once deployed, Cloud Run provides a secure auto-scaled HTTPS endpoint (e.g. `https://ecopulse-backend-xxxxx.run.app`).
 
 ---
 

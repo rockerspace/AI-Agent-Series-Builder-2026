@@ -9,7 +9,8 @@ on:
       - main
 
 jobs:
-  deploy:
+  deploy-backend:
+    name: Deploy Backend → Google Cloud Run
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
 
@@ -17,7 +18,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # ── Deploy Backend to Google Cloud Run ──
+      # ── Authenticate & Configure GCloud ─────────────────────────────────
       - name: Authenticate with Google Cloud
         uses: google-github-actions/auth@v2
         with:
@@ -26,15 +27,52 @@ jobs:
       - name: Set up Google Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: Deploy Backend Container to Google Cloud Run
+      # ── Build & Deploy to Cloud Run ──────────────────────────────────────
+      - name: Deploy Backend to Google Cloud Run
+        id: deploy
         run: |
           gcloud run deploy ecopulse-backend \
             --source ./backend \
             --region us-central1 \
             --allow-unauthenticated \
-            --set-env-vars GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
+            --port 8080 \
+            --memory 512Mi \
+            --cpu 1 \
+            --min-instances 0 \
+            --max-instances 5 \
+            --set-env-vars "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }},ENV=production"
 
-      # ── Deploy Frontend to Vercel ──
+      # ── Post-deploy health check ─────────────────────────────────────────
+      - name: Retrieve Cloud Run Service URL
+        id: get-url
+        run: |
+          URL=$(gcloud run services describe ecopulse-backend \
+            --region us-central1 \
+            --format "value(status.url)")
+          echo "service_url=$URL" >> "$GITHUB_OUTPUT"
+
+      - name: Health Check (30s retry loop)
+        run: |
+          SERVICE_URL="${{ steps.get-url.outputs.service_url }}"
+          echo "Probing $SERVICE_URL/health …"
+          for i in $(seq 1 10); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$SERVICE_URL/health" || echo "000")
+            echo "  Attempt $i: HTTP $STATUS"
+            [ "$STATUS" = "200" ] && { echo "✅ Health check passed!"; exit 0; }
+            sleep 15
+          done
+          echo "❌ Health check failed after 10 attempts."
+          exit 1
+
+  deploy-frontend:
+    name: Deploy Frontend → Vercel
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
 

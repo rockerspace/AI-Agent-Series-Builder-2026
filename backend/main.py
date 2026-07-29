@@ -2,10 +2,12 @@ import json
 import logging
 import os
 import re
+import time
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, File, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field, field_validator
 
 
@@ -55,53 +57,98 @@ from mcp_server import (
     search_climate_policies,
 )
 
-app = FastAPI(title="EcoPulse Climate Intelligence Agent API")
+# ─── Service state (populated during lifespan startup) ───────────────────────
+_agent_runner = None
+_startup_time: float = 0.0
+_kafka_mode: str = "unknown"
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Modern FastAPI lifespan — replaces deprecated @app.on_event handlers."""
+    global _agent_runner, _startup_time, _kafka_mode
+    # ── STARTUP ──────────────────────────────────────────────────────────────
+    _startup_time = time.time()
+    try:
+        await init_kafka_producer()
+        _kafka_mode = "live"
+    except Exception as exc:
+        logger.warning("Kafka producer failed to start: %s — running in mock mode.", exc)
+        _kafka_mode = "mock"
+
+    try:
+        _agent_runner = get_climate_agent()
+        logger.info("ADK Climate Agent initialized successfully.")
+    except Exception as exc:
+        logger.error("Error initializing ADK Climate Agent: %s", exc)
+        _agent_runner = None
+
+    yield  # application is now running
+
+    # ── SHUTDOWN ─────────────────────────────────────────────────────────────
+    await stop_kafka_producer()
+    logger.info("EcoPulse backend shut down cleanly.")
+
+
+app = FastAPI(
+    title="EcoPulse Climate Intelligence Agent API",
+    version="2.0.0",
+    description="Agentic climate intelligence platform powered by Google ADK & MCP",
+    lifespan=lifespan,
+)
 register_exception_handlers(app)
 
-@app.on_event("startup")
-async def startup_event():
-    await init_kafka_producer()
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    await stop_kafka_producer()
-
-# Add CORS Middleware to enable communication with the React frontend
+# ── CORS Middleware ───────────────────────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # For local development
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-@app.get("/")
+
+@app.get("/", tags=["Root"])
 def read_root():
     return {
         "status": "EcoPulse Backend is running!",
-        "description": "This is the API server for the EcoPulse Climate AI Agent. Hit /api/chat or use the React frontend dashboard.",
+        "description": "EcoPulse Climate AI Agent API. Use /api/chat or the React dashboard.",
         "endpoints": {
             "root": "/",
             "health": "/health",
             "chat": "/api/chat",
             "metrics": "/api/metrics",
             "calculate": "/api/calculate",
-            "policies": "/api/policies"
-        }
+            "policies": "/api/policies",
+        },
     }
 
-@app.get("/health")
-def health_check():
-    """Lightweight keepalive endpoint — ping this every 5 minutes to prevent Render cold starts."""
-    return {"status": "ok"}
 
-# Initialize the ADK agent runner
-try:
-    agent_runner = get_climate_agent()
-    logger.info("ADK Climate Agent initialized successfully.")
-except Exception as e:
-    logger.error(f"Error initializing ADK Climate Agent: {e}")
-    agent_runner = None
+@app.get("/health", tags=["Health"])
+def health_check():
+    """Detailed health probe used by Cloud Run, Docker, and CI pipelines."""
+    uptime_seconds = round(time.time() - _startup_time, 1) if _startup_time else 0
+    healthy = _agent_runner is not None
+    payload = {
+        "status": "ok" if healthy else "degraded",
+        "agent_ready": healthy,
+        "kafka_mode": _kafka_mode,
+        "uptime_seconds": uptime_seconds,
+        "version": "2.0.0",
+        "environment": os.getenv("ENV", "development"),
+    }
+    status_code = 200 if healthy else 503
+    return JSONResponse(content=payload, status_code=status_code)
+
+
+# ── Expose agent runner to route handlers ─────────────────────────────────────
+def get_agent_runner():
+    """Return the module-level agent runner (set during lifespan startup)."""
+    return _agent_runner
+
+
+# Backwards-compatible alias used in legacy route handlers
+agent_runner = None  # will be lazily replaced by get_agent_runner() calls
 
 class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=5000)
@@ -118,6 +165,7 @@ class ChatRequest(BaseModel):
 
 @app.post("/api/chat")
 async def chat_endpoint(request: ChatRequest):
+    agent_runner = get_agent_runner()
     if not agent_runner:
         raise AgentNotInitializedException()
     
@@ -176,6 +224,7 @@ async def upload_bill_endpoint(
     session_id: str = "default_session",
     user_id: str = "default_user"
 ):
+    agent_runner = get_agent_runner()
     if not agent_runner:
         raise AgentNotInitializedException()
     
