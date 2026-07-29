@@ -1,6 +1,9 @@
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# Application version — keep in sync with main.py
+APP_VERSION = "2.0.0"
+
 
 class Settings(BaseSettings):
     gemini_api_key: str | None = None
