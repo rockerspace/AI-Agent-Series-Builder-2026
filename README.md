@@ -330,6 +330,8 @@ EcoPulse features modular pipelines under `.github/workflows/` to validate updat
 | `GEMINI_API_KEY` | Gemini API key for the agentic loop |
 | `GCP_SA_KEY` | Google Cloud Service Account JSON for Cloud Run |
 | `VERCEL_TOKEN` | Vercel Personal Access Token for frontend deploys |
+| `VERCEL_ORG_ID` | Vercel Org/Team ID (from `.vercel/project.json` or Vercel dashboard) |
+| `VERCEL_PROJECT_ID` | Vercel Project ID (from `.vercel/project.json` or Vercel dashboard) |
 
 ---
 
