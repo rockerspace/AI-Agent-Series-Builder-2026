@@ -530,7 +530,75 @@ async def speech_to_text_endpoint(
             "transcript": data_resp.get("transcript", "")
         }
 
+# ── Enterprise OS — Real-Time Telemetry & Scope 1-3 Compliance ──
+
+class EnterpriseScopeAuditRequest(BaseModel):
+    company_name: str = Field("EcoPulse Enterprise Inc.", min_length=1, max_length=100)
+    location: str = Field("Bengaluru", min_length=1, max_length=100)
+    scope1_direct_fuel_liters: float = Field(..., ge=0)
+    scope2_electricity_kwh: float = Field(..., ge=0)
+    scope3_logistics_ton_km: float = Field(..., ge=0)
+
+class EnterpriseDemandResponseRequest(BaseModel):
+    facility_id: str = Field("FACILITY-BLR-01", min_length=1, max_length=50)
+    mode: str = Field("AUTO", pattern="^(AUTO|ECO_MAX|NORMAL)$")
+
+@app.get("/api/enterprise/telemetry", tags=["Enterprise"])
+def get_enterprise_telemetry_endpoint(location: str = "Bengaluru"):
+    from mcp_server import (
+        get_grid_carbon_intensity_telemetry,
+        get_live_iot_sensor_telemetry,
+        get_satellite_emission_plume_telemetry,
+    )
+    iot = get_live_iot_sensor_telemetry(location)
+    satellite = get_satellite_emission_plume_telemetry(f"{location} Industrial District")
+    grid = get_grid_carbon_intensity_telemetry("IN-KA")
+    return {
+        "status": "success",
+        "location": location,
+        "iot_sensor_telemetry": iot,
+        "satellite_plume_telemetry": satellite,
+        "grid_carbon_telemetry": grid
+    }
+
+@app.post("/api/enterprise/scope-audit", tags=["Enterprise"])
+def enterprise_scope_audit_endpoint(req: EnterpriseScopeAuditRequest):
+    from mcp_server import calculate_enterprise_scope_emissions
+    audit = calculate_enterprise_scope_emissions(
+        req.scope1_direct_fuel_liters,
+        req.scope2_electricity_kwh,
+        req.scope3_logistics_ton_km
+    )
+    audit["company_name"] = req.company_name
+    audit["location"] = req.location
+    return audit
+
+@app.post("/api/enterprise/generate-csrd-pdf", tags=["Enterprise"])
+def generate_csrd_pdf_endpoint(req: EnterpriseScopeAuditRequest):
+    from mcp_server import generate_enterprise_csrd_report
+    res = generate_enterprise_csrd_report(
+        req.company_name,
+        req.location,
+        req.scope1_direct_fuel_liters,
+        req.scope2_electricity_kwh,
+        req.scope3_logistics_ton_km
+    )
+    if "pdf_path" in res and os.path.exists(res["pdf_path"]):
+        return StreamingResponse(
+            open(res["pdf_path"], "rb"),
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"attachment; filename={os.path.basename(res['pdf_path'])}"}
+        )
+    raise HTTPException(status_code=500, detail="Failed to generate CSRD compliance PDF")
+
+@app.post("/api/enterprise/demand-response", tags=["Enterprise"])
+def enterprise_demand_response_endpoint(req: EnterpriseDemandResponseRequest):
+    from mcp_server import dispatch_grid_demand_response
+    res = dispatch_grid_demand_response(req.facility_id, req.mode)
+    return res
+
 if __name__ == "__main__":
     import uvicorn
     # Run uvicorn on port 8000
     uvicorn.run(app, host="127.0.0.1", port=8000)
+

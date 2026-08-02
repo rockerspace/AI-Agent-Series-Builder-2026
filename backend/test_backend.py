@@ -361,4 +361,84 @@ def test_mock_assertions_iot(mock_adjust, mock_kafka):
     response = client.post("/api/iot/control", json={"device_id": "nest-thermostat-1", "target_temp": 24.0})
     assert response.status_code == 200
 
+# 6. Enterprise OS Telemetry & Compliance Tests
+def test_enterprise_telemetry_endpoint():
+    response = client.get("/api/enterprise/telemetry?location=Bengaluru")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "success"
+    assert "iot_sensor_telemetry" in data
+    assert "satellite_plume_telemetry" in data
+    assert "grid_carbon_telemetry" in data
+
+def test_enterprise_scope_audit_endpoint():
+    payload = {
+        "company_name": "Acme CleanTech Inc.",
+        "location": "Bengaluru",
+        "scope1_direct_fuel_liters": 500.0,
+        "scope2_electricity_kwh": 2000.0,
+        "scope3_logistics_ton_km": 1500.0
+    }
+    response = client.post("/api/enterprise/scope-audit", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["company_name"] == "Acme CleanTech Inc."
+    assert "total_emissions_tco2" in data
+    assert "breakdown" in data
+
+def test_enterprise_csrd_pdf_endpoint():
+    payload = {
+        "company_name": "Acme CleanTech Inc.",
+        "location": "Bengaluru",
+        "scope1_direct_fuel_liters": 500.0,
+        "scope2_electricity_kwh": 2000.0,
+        "scope3_logistics_ton_km": 1500.0
+    }
+    response = client.post("/api/enterprise/generate-csrd-pdf", json=payload)
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "application/pdf"
+
+def test_enterprise_demand_response_endpoint():
+    payload = {
+        "facility_id": "FACILITY-BLR-01",
+        "mode": "AUTO"
+    }
+    response = client.post("/api/enterprise/demand-response", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "Demand Response Dispatched"
+    assert data["facility_id"] == "FACILITY-BLR-01"
+
+def test_mcp_live_iot_sensor_telemetry():
+    from mcp_server import get_live_iot_sensor_telemetry
+    res = get_live_iot_sensor_telemetry("Bengaluru")
+    assert res["status"] == "Live IoT Stream Active"
+    assert "telemetry" in res
+    assert "co2_concentration_ppm" in res["telemetry"]
+
+def test_mcp_satellite_emission_plume_telemetry():
+    from mcp_server import get_satellite_emission_plume_telemetry
+    res = get_satellite_emission_plume_telemetry("Peenya Industrial Area")
+    assert res["status"] == "Sentinel-5P Satellite Telemetry Synced"
+    assert "plume_detection" in res
+
+def test_mcp_grid_carbon_intensity_telemetry():
+    from mcp_server import get_grid_carbon_intensity_telemetry
+    res = get_grid_carbon_intensity_telemetry("IN-KA")
+    assert res["status"] == "Grid Carbon Telemetry Synced"
+    assert "grid_carbon_intensity_g_co2_kwh" in res
+
+def test_mcp_calculate_enterprise_scope_emissions():
+    from mcp_server import calculate_enterprise_scope_emissions
+    res = calculate_enterprise_scope_emissions(100.0, 1000.0, 500.0)
+    assert res["status"] == "Corporate Audit Complete"
+    assert res["total_emissions_tco2"] > 0
+
+def test_mcp_dispatch_grid_demand_response():
+    from mcp_server import dispatch_grid_demand_response
+    res = dispatch_grid_demand_response("FACILITY-01", "ECO_MAX")
+    assert res["status"] == "Demand Response Dispatched"
+    assert res["load_shaved_kw"] > 0
+
+
 

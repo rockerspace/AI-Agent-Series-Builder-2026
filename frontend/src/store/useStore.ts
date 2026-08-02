@@ -15,6 +15,10 @@ interface AppState {
   setWarning: (warning: any) => void;
   feed: FeedItem[];
   addFeed: (text: string) => void;
+  enterpriseTelemetry: any;
+  setEnterpriseTelemetry: (data: any) => void;
+  demandResponseActive: boolean;
+  setDemandResponseActive: (active: boolean) => void;
 }
 
 export const useStore = create<AppState>((set) => ({
@@ -30,5 +34,9 @@ export const useStore = create<AppState>((set) => ({
       { id: Date.now() + Math.random(), text, time: new Date().toLocaleTimeString() },
       ...state.feed.slice(0, 4)
     ]
-  }))
+  })),
+  enterpriseTelemetry: null,
+  setEnterpriseTelemetry: (data) => set({ enterpriseTelemetry: data }),
+  demandResponseActive: false,
+  setDemandResponseActive: (active) => set({ demandResponseActive: active })
 }));

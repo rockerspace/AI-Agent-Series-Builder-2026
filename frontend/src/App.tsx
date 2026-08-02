@@ -5,6 +5,7 @@ import Dashboard from './components/Dashboard.tsx';
 import Pulse from './components/Pulse.tsx';
 import Voice from './components/Voice.tsx';
 import Negotiations from './components/Negotiations.tsx';
+import EnterpriseSentinel from './components/EnterpriseSentinel.tsx';
 
 import { useStore } from './store/useStore.ts';
 
@@ -21,6 +22,8 @@ const App: React.FC = () => {
         return 'Offset Bidding Room (Agent-to-Agent)';
       case 'pulse':
         return 'Global Ecological Pulse & Policies';
+      case 'enterprise':
+        return 'Enterprise OS — Live Telemetry & ESG Command Center';
       case 'voice':
         return 'Sarvam Eco-Voice Interface';
       default:
@@ -50,6 +53,7 @@ const App: React.FC = () => {
         {activeTab === 'calculator' && <Dashboard />}
         {activeTab === 'negotiate' && <Negotiations />}
         {activeTab === 'pulse' && <Pulse />}
+        {activeTab === 'enterprise' && <EnterpriseSentinel />}
         {activeTab === 'voice' && <Voice />}
       </main>
     </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { MessageSquare, Calculator, Globe, Shield, Mic, RefreshCw } from 'lucide-react';
+import { MessageSquare, Calculator, Globe, Shield, Mic, RefreshCw, Building2 } from 'lucide-react';
 import { NavItem } from './ui/NavItem.tsx';
 
 interface SidebarProps {
@@ -13,6 +13,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
     { id: 'calculator', label: 'Carbon Tracker', icon: Calculator },
     { id: 'negotiate', label: 'Offset Bidding', icon: RefreshCw },
     { id: 'pulse', label: 'Climate Pulse', icon: Globe },
+    { id: 'enterprise', label: 'Enterprise Sentinel', icon: Building2 },
     { id: 'voice', label: 'Eco Voice', icon: Mic },
   ];
 
@@ -47,7 +48,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
           <Shield size={12} color="#10b981" />
           <span>Google ADK & MCP</span>
         </div>
-        <span>v1.0.0 &copy; 2026</span>
+        <span>v2.0.0 Enterprise &copy; 2026</span>
       </div>
     </aside>
   );
